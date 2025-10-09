@@ -25,6 +25,11 @@
     .export-toolbar .btn {
         width: 100%;
     }
+
+    /* Mobile spacing optimization for title layout */
+    .paper-title-actions {
+        gap: 0.5rem; /* Reduced from 1rem to maximize title space */
+    }
 }
 
 /* Bookmark Button on Paper Cards */

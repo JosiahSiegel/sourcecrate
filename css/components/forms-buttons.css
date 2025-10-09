@@ -377,10 +377,10 @@ input[type="range"]::-moz-range-thumb:hover {
 .paper-header h3 {
     font-size: 1.3rem;
     font-weight: 900;
-    line-height: 1.3;
+    line-height: 1.4;
     color: var(--text-color);
-    letter-spacing: -0.01em;
-    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    text-transform: none;
     flex: 1;
     min-width: 0;
     display: flex;
@@ -665,6 +665,19 @@ footer a:hover {
     .paper-meta {
         flex-direction: column;
         gap: 0.5rem;
+    }
+
+    /* Mobile title improvements - maximize title space */
+    .paper-card {
+        padding: 1rem; /* Reduced from 1.5rem to gain space */
+    }
+
+    .paper-header h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        gap: 0.5rem; /* Reduced from 0.75rem */
+        letter-spacing: 0; /* Changed from -0.02em for better small-screen readability */
+        line-height: 1.35; /* Reduced from 1.4 to minimize wrapping */
     }
 }
 
