@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SourceCrate - Academic Paper Research</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SourceCrate</h1>
+        </header>
+
+        <main>
+            <!-- Search Section -->
+            <section class="search-section">
+                <form id="searchForm">
+                    <div class="search-input-wrapper">
+                        <div class="search-input">
+                            <input
+                                type="text"
+                                id="searchQuery"
+                                placeholder="Search papers (e.g., machine learning, DOI, author)"
+                                required
+                                autocomplete="off"
+                            >
+                        </div>
+                        <!-- Search History Dropdown -->
+                        <div id="searchHistoryDropdown" class="search-history-dropdown" style="display: none;">
+                            <div class="search-history-header">
+                                <span>Recent Searches</span>
+                                <button type="button" id="clearHistoryBtn" class="clear-history-btn" title="Clear history" tabindex="-1">Clear</button>
+                            </div>
+                            <ul id="searchHistoryList" class="search-history-list"></ul>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="pdfOnly">
+                            <input type="checkbox" id="pdfOnly">
+                            Only Direct Download
+                        </label>
+                    </div>
+                    <div class="search-actions">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        <button type="button" id="viewBookmarksBtn" class="btn btn-secondary" title="View saved papers">
+                            ★ Bookmarks (<span id="bookmarkCount">0</span>)
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+
+            <!-- Results Section -->
+            <section class="results-section">
+                <!-- Export Actions Toolbar -->
+                <div id="exportToolbar" class="export-toolbar" style="display: none;">
+                    <button type="button" id="exportBibTeXBtn" class="btn btn-secondary" title="Export to BibTeX format">
+                        Export BibTeX
+                    </button>
+                    <button type="button" id="exportRISBtn" class="btn btn-secondary" title="Export to RIS format">
+                        Export RIS
+                    </button>
+                    <button type="button" id="exportCSVBtn" class="btn btn-secondary" title="Export to CSV">
+                        Export CSV
+                    </button>
+                    <button type="button" id="exportJSONBtn" class="btn btn-secondary" title="Export to JSON">
+                        Export JSON
+                    </button>
+                </div>
+
+                <div id="results" class="results-container">
+                    <p class="placeholder">Search results will appear here</p>
+                </div>
+            </section>
+
+            <!-- Bookmarks Section -->
+            <section id="bookmarksSection" class="bookmarks-section" style="display: none;">
+                <div class="bookmarks-header">
+                    <h2>Saved Papers</h2>
+                    <button type="button" id="backToSearchBtn" class="btn btn-secondary">
+                        ← Back to Search
+                    </button>
+                </div>
+
+                <!-- Collections Tabs -->
+                <div id="collectionsTabs" class="collections-tabs">
+                    <button class="collection-tab active" data-collection="all">
+                        All Papers (<span id="allCount">0</span>)
+                    </button>
+                </div>
+
+                <!-- Bookmarks Export Toolbar -->
+                <div id="bookmarksExportToolbar" class="export-toolbar">
+                    <button type="button" id="exportBookmarksBibTeXBtn" class="btn btn-secondary">
+                        Export BibTeX
+                    </button>
+                    <button type="button" id="exportBookmarksRISBtn" class="btn btn-secondary">
+                        Export RIS
+                    </button>
+                    <button type="button" id="exportBookmarksCSVBtn" class="btn btn-secondary">
+                        Export CSV
+                    </button>
+                    <button type="button" id="exportBookmarksJSONBtn" class="btn btn-secondary">
+                        Export JSON
+                    </button>
+                    <button type="button" id="clearAllBookmarksBtn" class="btn btn-secondary" style="margin-left: auto;">
+                        Clear All
+                    </button>
+                </div>
+
+                <div id="bookmarksResults" class="results-container">
+                    <p class="placeholder">No bookmarked papers yet</p>
+                </div>
+            </section>
+
+        </main>
+
+        <footer>
+            <p>
+                SourceCrate · Academic Paper Research ·
+                <a href="https://github.com/sponsors/josiahsiegel" target="_blank" rel="noopener noreferrer" class="footer-sponsor-link">
+                    <span class="sponsor-icon">❤️</span>
+                    <span>Sponsor</span>
+                </a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTopBtn" class="scroll-to-top" title="Scroll to top" aria-label="Scroll to top">
+        ↑
+    </button>
+
+    <!-- Paper Card Template (cloned for performance, saves 15KB JS) -->
+    <template id="paper-card-template">
+        <div class="paper-card paper-card-streaming">
+            <div class="paper-header">
+                <div class="paper-title-row">
+                    <h3>
+                        <span class="title-search-icon" tabindex="0" role="button" aria-label="Search for similar papers" data-title="">🔍</span>
+                        <span data-slot="title"></span>
+                    </h3>
+                </div>
+            </div>
+            <div class="paper-meta">
+                <span class="meta-item" data-slot="authors"></span>
+                <span class="meta-item" data-slot="year-journal"></span>
+            </div>
+            <div class="research-metadata-badges" data-slot="badges"></div>
+            <p class="paper-abstract" data-slot="abstract"></p>
+            <div class="paper-links" data-slot="links"></div>
+        </div>
+    </template>
+
+    <!--
+        Optional: Load config.js to override API URL
+        - Local dev: auto-generated by local-manager.sh with localhost:9000
+        - Production: file doesn't exist (404), state.js auto-detection handles it
+    -->
+    <script src="config.js"></script>
+
+    <!-- Load modular ES6 app -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

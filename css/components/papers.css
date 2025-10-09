@@ -1,0 +1,265 @@
+/* Hybrid Source-Level Access Indicators */
+.source-access-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Primary PDF Action - Prominent Download Button */
+.primary-pdf-action {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-pdf-download {
+    background: var(--accent-color);
+    color: var(--bg-color);
+    padding: 0.75rem 1.5rem;
+    min-height: 44px;
+    border-radius: 0;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow);
+    border: 3px solid var(--bg-color);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.btn-pdf-download:hover {
+    background: var(--accent-hover);
+    transform: translate(2px, 2px);
+    box-shadow: var(--shadow);
+}
+
+.btn-pdf-download .pdf-icon {
+    font-size: 1rem;
+}
+
+/* Progressive Disclosure - Alternate PDFs Dropdown */
+.alternate-pdfs-dropdown {
+    display: inline-block;
+    position: relative;
+}
+
+.alternate-pdfs-dropdown summary {
+    cursor: pointer;
+    color: var(--accent-color);
+    font-size: 0.875rem;
+    list-style: none;
+    user-select: none;
+    padding: 0.375rem 0.625rem;
+    border-radius: 3px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+}
+
+.alternate-pdfs-dropdown summary::-webkit-details-marker {
+    display: none;
+}
+
+.alternate-pdfs-dropdown summary:hover {
+    background-color: rgba(166, 124, 82, 0.15);
+    border-color: var(--accent-color);
+}
+
+.alternate-pdfs-dropdown .alternate-pdf-list {
+    list-style: none;
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    position: absolute;
+    z-index: 10;
+    min-width: 180px;
+    box-shadow: var(--shadow);
+    top: 100%;
+    left: 0;
+}
+
+.alternate-pdfs-dropdown .alternate-pdf-list li {
+    padding: 0.25rem 0;
+}
+
+.alternate-pdfs-dropdown .alternate-pdf-list a {
+    color: var(--accent-color);
+    text-decoration: none;
+    font-size: 0.875rem;
+    display: block;
+    padding: 0.375rem 0.5rem;
+    border-radius: 3px;
+}
+
+.alternate-pdfs-dropdown .alternate-pdf-list a:hover {
+    background-color: rgba(166, 124, 82, 0.15);
+    text-decoration: underline;
+}
+
+/* All Sources - Chip Display */
+.all-sources-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sources-label {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+}
+
+.source-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.4rem 0.8rem;
+    min-height: 36px;
+    border-radius: 0;
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: none;
+    border: 2px solid;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Brutalist styling for all source chips */
+.source-chip-pdf,
+.source-chip-page,
+.source-chip-doi {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+.source-chip-pdf:hover,
+.source-chip-page:hover,
+.source-chip-doi:hover {
+    background-color: var(--surface-color);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+/* Citation styling - moved below */
+/* Citation Count Tiers - Size-based scaling (research shows size/weight > color for metrics) */
+.source-citations {
+    font-style: normal;
+    transition: all 0.15s ease;
+}
+
+/* Minimal impact (1-9 citations) - barely visible */
+.citation-tier-minimal {
+    color: var(--text-tertiary);
+    font-size: 0.7rem;
+    font-weight: 400;
+    opacity: 0.6;
+}
+
+/* Low impact (10-49 citations) - subtle */
+.citation-tier-low {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.7;
+}
+
+/* Medium impact (50-99 citations) - noticeable */
+.citation-tier-medium {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+/* High impact (100+ citations) - prominent */
+.citation-tier-high {
+    color: var(--accent-color);
+    font-size: 0.85rem;
+    font-weight: 700;
+    opacity: 1.0;
+}
+
+/* Mobile Responsive - Vertical Stacking */
+@media (max-width: 768px) {
+    .source-access-container {
+        gap: 1rem;
+    }
+
+    .primary-pdf-action {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-pdf-download {
+        width: 100%;
+        justify-content: center;
+        padding: 0.875rem 1.5rem;
+    }
+
+    .alternate-pdfs-dropdown {
+        width: 100%;
+    }
+
+    .alternate-pdfs-dropdown summary {
+        width: 100%;
+        text-align: center;
+    }
+
+    .all-sources-chips {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .source-chip {
+        width: 100%;
+        justify-content: space-between;
+        min-height: 44px; /* WCAG touch target minimum for mobile */
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* Streaming specific styles - Simplified */
+.results-summary-complete {
+    border-left-color: var(--success-color);
+}
+
+.loading-message {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem;
+    font-size: 1.1rem;
+    font-style: italic;
+}
+
+.paper-card-streaming {
+    animation: slideInFade 0.3s ease-out;
+}
+
+/* Smooth slide and fade animation for new cards */
+@keyframes slideInFade {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* ============================================================================

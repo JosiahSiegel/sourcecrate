@@ -1,0 +1,44 @@
+/* ============================================================================
+   FOOTER - Site footer with sponsor link
+   ============================================================================ */
+
+footer {
+    text-align: center;
+    padding-top: 1.5rem;
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-tertiary);
+    font-size: 0.8125rem;
+}
+
+footer p {
+    margin: 0;
+}
+
+footer a {
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: var(--accent-color);
+}
+
+/* Sponsor Link - Inline Style */
+.footer-sponsor-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.footer-sponsor-link:hover {
+    color: var(--accent-color);
+}
+
+.sponsor-icon {
+    font-size: 0.875rem;
+    line-height: 1;
+}

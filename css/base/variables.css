@@ -1,0 +1,31 @@
+/* ============================================================================
+   CSS VARIABLES - Brutalist Design Tokens
+   ============================================================================ */
+
+:root {
+    /* Minimal Brutalism Theme - Bold, raw, unapologetic */
+    --bg-color: #1a1512;
+    --card-bg: #2d2420;
+    --surface-color: #2d2420;
+    --border-color: #c0a392;
+
+    /* Text Colors - Brutalist
+       High contrast for maximum readability
+    */
+    --text-color: #fdf8f6;
+    --text-secondary: #c0a392;
+    --text-tertiary: #a18072;
+
+    /* Accents - Brutalist */
+    --accent-color: #c0a392;
+    --accent-hover: #d4b5a5;
+    --success-color: #7a9b76;
+    --error-color: #a67c6f;
+    --warning-color: #b89968;
+    --accent-teal: #7b9a92;
+
+    /* Brutalist Shadows - Strong, defined */
+    --shadow-sm: 4px 4px 0 rgba(166, 124, 82, 0.3);
+    --shadow: 6px 6px 0 rgba(166, 124, 82, 0.4);
+    --shadow-lg: 8px 8px 0 rgba(166, 124, 82, 0.5);
+}

@@ -1,0 +1,170 @@
+   TIER 1 FEATURES - Export, Bookmarks, Search History
+   ============================================================================ */
+
+/* Export Toolbar */
+.export-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+}
+
+.export-toolbar .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .export-toolbar {
+        flex-direction: column;
+    }
+
+    .export-toolbar .btn {
+        width: 100%;
+    }
+}
+
+/* Bookmark Button on Paper Cards */
+.paper-title-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+}
+
+.paper-title-actions h3 {
+    flex: 1;
+    min-width: 0;
+}
+
+.bookmark-btn {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.bookmark-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background: rgba(166, 124, 82, 0.1);
+}
+
+.bookmark-btn.bookmarked {
+    border-color: var(--accent-color);
+    background: var(--accent-color);
+    color: var(--bg-color);
+}
+
+.bookmark-btn.bookmarked .bookmark-icon {
+    fill: var(--bg-color);
+}
+
+.bookmark-btn:active {
+    transform: scale(0.95);
+}
+
+/* Search Actions Row */
+.search-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.search-actions .btn {
+    flex: 1;
+    min-width: 150px;
+}
+
+@media (max-width: 640px) {
+    .search-actions {
+        flex-direction: column;
+    }
+
+    .search-actions .btn {
+        width: 100%;
+        min-width: unset;
+    }
+}
+
+/* Search History Dropdown */
+.search-input-wrapper {
+    position: relative;
+}
+
+.search-history-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+    box-shadow: var(--shadow);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 100;
+    margin-top: 0.5rem;
+}
+
+.search-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--border-color);
+    background: var(--card-bg);
+}
+
+.search-history-header span {
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-color);
+}
+
+.clear-history-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.15s ease;
+}
+
+.clear-history-btn:hover {
+    color: var(--accent-color);
+}
+
+.search-history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.search-history-list li {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

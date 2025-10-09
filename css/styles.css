@@ -1,0 +1,30 @@
+/* ===========================================================================
+   SourceCrate Browser UI - Modular CSS Architecture
+   ===========================================================================
+
+   This file imports all CSS modules in order.
+   Each module is self-contained and handles a specific aspect of the UI.
+
+   Benefits:
+   - Easier for AI to manage and update individual files
+   - Better organization and maintainability
+   - Smaller file sizes reduce token usage
+   - Clear separation of concerns
+*/
+
+/* Base Styles - Variables, resets, animations */
+@import 'base/variables.css';
+@import 'base/reset.css';
+@import 'base/animations.css';
+
+/* Layout - Page structure */
+@import 'layout/container.css';
+@import 'layout/header.css';
+@import 'layout/footer.css';
+@import 'layout/sections.css';
+
+/* Components - UI Elements */
+@import 'components/forms-buttons.css';
+@import 'components/papers.css';
+@import 'components/tier1-features.css';
+@import 'components/scroll-button.css';

@@ -1,0 +1,190 @@
+
+.search-history-list li:hover {
+    background: var(--card-bg);
+    border-left: 3px solid var(--accent-color);
+}
+
+.search-history-list li:last-child {
+    border-bottom: none;
+}
+
+.history-query {
+    flex: 1;
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.history-meta {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-left: 1rem;
+}
+
+.history-delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    margin-left: 0.5rem;
+    font-size: 1rem;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.history-delete-btn:hover {
+    color: var(--error-color);
+}
+
+/* Bookmarks Count Badge */
+#bookmarkCount {
+    font-weight: 900;
+}
+
+/* Bookmarks View Section */
+.bookmarks-section {
+    background: var(--card-bg);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border: 3px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+@media (min-width: 640px) {
+    .bookmarks-section { padding: 1.5rem; }
+}
+
+@media (min-width: 1024px) {
+    .bookmarks-section { padding: 2rem; }
+}
+
+.bookmarks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.bookmarks-header h2 {
+    font-size: 1.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+@media (max-width: 640px) {
+    .bookmarks-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .bookmarks-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .bookmarks-header .btn {
+        width: 100%;
+    }
+}
+
+/* Collections Tabs */
+.collections-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.collection-tab {
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.05em;
+    transition: all 0.15s ease;
+}
+
+.collection-tab:hover {
+    background: var(--card-bg);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.collection-tab.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--bg-color);
+}
+
+@media (max-width: 640px) {
+    .collections-tabs {
+        flex-direction: column;
+    }
+
+    .collection-tab {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* ============================================================================
+   Scroll to Top Button - Floating action button
+   ============================================================================ */
+
+.scroll-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--accent-color);
+    color: var(--bg-color);
+    border: 3px solid var(--bg-color);
+    width: 56px;
+    height: 56px;
+    font-size: 1.5rem;
+    font-weight: 900;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.scroll-to-top.visible {
+    display: flex;
+}
+
+.scroll-to-top:hover {
+    background: var(--accent-hover);
+    transform: translateY(-4px);
+    box-shadow: 8px 12px 0 rgba(166, 124, 82, 0.5);
+}
+
+.scroll-to-top:active {
+    transform: translateY(-2px);
+    box-shadow: 6px 8px 0 rgba(166, 124, 82, 0.5);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .scroll-to-top {
+        bottom: 1rem;
+        right: 1rem;
+        width: 48px;
+        height: 48px;
+        font-size: 1.25rem;
+    }
+}

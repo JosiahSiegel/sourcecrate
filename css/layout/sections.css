@@ -1,0 +1,98 @@
+/* ============================================================================
+   SECTIONS - Content sections and results containers
+   ============================================================================ */
+
+section {
+    background: var(--card-bg);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border: 3px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+@media (min-width: 640px) {
+    section { padding: 1.5rem; }
+}
+
+@media (min-width: 1024px) {
+    section { padding: 2rem; }
+}
+
+/* Hide results and status sections until needed */
+.results-section,
+.status-section {
+    display: none;
+}
+
+.results-section.active,
+.status-section.active {
+    display: block;
+}
+
+/* Results Container */
+.results-container {
+    min-height: 200px;
+}
+
+.placeholder {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 3rem;
+}
+
+.no-results {
+    text-align: center;
+    color: var(--warning-color);
+    padding: 2rem;
+    font-weight: 500;
+}
+
+.results-summary {
+    background-color: var(--surface-color);
+    padding: 1.5rem;
+    border-radius: 6px;
+    margin-bottom: 2rem;
+    border-left: 3px solid var(--accent-color);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.results-summary p {
+    flex: 1;
+    margin: 0;
+}
+
+.results-summary-complete {
+    border-left-color: var(--success-color);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+.loading-message {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem;
+    font-size: 1.1rem;
+    font-style: italic;
+}
+
+#results-container {
+    contain: layout style;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    section {
+        padding: 1.5rem;
+    }
+}
