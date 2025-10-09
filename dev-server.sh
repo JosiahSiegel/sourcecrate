@@ -47,5 +47,6 @@ echo ""
 # Start http-server with:
 # -p PORT: specified port
 # -c-1: disable caching (always serve fresh files)
+# -g: enable gzip compression (matches GitHub Pages behavior)
 # -o: open browser automatically
-npx http-server -p $PORT -c-1 -o
+npx http-server -p $PORT -c-1 -g -o

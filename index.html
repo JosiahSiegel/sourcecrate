@@ -3,9 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free academic paper search engine. Search 9 databases simultaneously (arXiv, PubMed, CrossRef, OpenAlex) for instant PDF downloads. 100% client-side, privacy-focused.">
     <title>SourceCrate - Academic Paper Research</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Modular CSS - Loaded in parallel for optimal performance -->
+    <!-- Base Styles -->
+    <link rel="stylesheet" href="css/base/variables.css">
+    <link rel="stylesheet" href="css/base/reset.css">
+    <link rel="stylesheet" href="css/base/animations.css">
+    <!-- Layout -->
+    <link rel="stylesheet" href="css/layout/container.css">
+    <link rel="stylesheet" href="css/layout/header.css">
+    <link rel="stylesheet" href="css/layout/footer.css">
+    <link rel="stylesheet" href="css/layout/sections.css">
+    <!-- Components -->
+    <link rel="stylesheet" href="css/components/forms-buttons.css">
+    <link rel="stylesheet" href="css/components/papers.css">
+    <link rel="stylesheet" href="css/components/tier1-features.css">
+    <link rel="stylesheet" href="css/components/scroll-button.css">
 </head>
 <body>
     <div class="container">
@@ -22,6 +38,7 @@
                             <input
                                 type="text"
                                 id="searchQuery"
+                                role="combobox"
                                 placeholder="Search papers (e.g., machine learning, DOI, author)"
                                 required
                                 autocomplete="off"

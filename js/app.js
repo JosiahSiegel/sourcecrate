@@ -11,7 +11,6 @@ import {
 } from './state.js';
 import { searchWithClient, searchByTitle as apiSearchByTitle } from './api.js';
 import { renderStreamingResults, buildPaperCard } from './rendering.js';
-import { exportPapers } from './export.js';
 import {
     getBookmarks,
     isBookmarked,
@@ -418,23 +417,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Export button handlers
-    document.getElementById('exportBibTeXBtn').addEventListener('click', () => {
+    // Export button handlers - dynamically import export.js only when needed
+    document.getElementById('exportBibTeXBtn').addEventListener('click', async () => {
+        const { exportPapers } = await import('./export.js');
         const papers = Array.from(papersByKey.values());
         exportPapers(papers, 'bibtex');
     });
 
-    document.getElementById('exportRISBtn').addEventListener('click', () => {
+    document.getElementById('exportRISBtn').addEventListener('click', async () => {
+        const { exportPapers } = await import('./export.js');
         const papers = Array.from(papersByKey.values());
         exportPapers(papers, 'ris');
     });
 
-    document.getElementById('exportCSVBtn').addEventListener('click', () => {
+    document.getElementById('exportCSVBtn').addEventListener('click', async () => {
+        const { exportPapers } = await import('./export.js');
         const papers = Array.from(papersByKey.values());
         exportPapers(papers, 'csv');
     });
 
-    document.getElementById('exportJSONBtn').addEventListener('click', () => {
+    document.getElementById('exportJSONBtn').addEventListener('click', async () => {
+        const { exportPapers } = await import('./export.js');
         const papers = Array.from(papersByKey.values());
         exportPapers(papers, 'json');
     });
@@ -449,23 +452,27 @@ document.addEventListener('DOMContentLoaded', () => {
         showSearchView();
     });
 
-    // Bookmarks export handlers
-    document.getElementById('exportBookmarksBibTeXBtn').addEventListener('click', () => {
+    // Bookmarks export handlers - dynamically import export.js only when needed
+    document.getElementById('exportBookmarksBibTeXBtn').addEventListener('click', async () => {
+        const { exportPapers } = await import('./export.js');
         const papers = getCollectionPapers('all');
         exportPapers(papers, 'bibtex');
     });
 
-    document.getElementById('exportBookmarksRISBtn').addEventListener('click', () => {
+    document.getElementById('exportBookmarksRISBtn').addEventListener('click', async () => {
+        const { exportPapers } = await import('./export.js');
         const papers = getCollectionPapers('all');
         exportPapers(papers, 'ris');
     });
 
-    document.getElementById('exportBookmarksCSVBtn').addEventListener('click', () => {
+    document.getElementById('exportBookmarksCSVBtn').addEventListener('click', async () => {
+        const { exportPapers } = await import('./export.js');
         const papers = getCollectionPapers('all');
         exportPapers(papers, 'csv');
     });
 
-    document.getElementById('exportBookmarksJSONBtn').addEventListener('click', () => {
+    document.getElementById('exportBookmarksJSONBtn').addEventListener('click', async () => {
+        const { exportPapers } = await import('./export.js');
         const papers = getCollectionPapers('all');
         exportPapers(papers, 'json');
     });
