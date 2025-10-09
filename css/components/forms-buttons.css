@@ -29,8 +29,10 @@
     font-weight: 600;
 }
 
-.search-input input:focus {
-    outline: none;
+.search-input input:focus,
+.search-input input:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
     border-color: var(--accent-color);
 }
 
@@ -65,8 +67,11 @@
 }
 
 .form-group input[type="text"]:focus,
-.form-group input[type="number"]:focus {
-    outline: none;
+.form-group input[type="text"]:focus-visible,
+.form-group input[type="number"]:focus,
+.form-group input[type="number"]:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
     border-color: var(--accent-color);
 }
 

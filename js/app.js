@@ -43,6 +43,7 @@ if ('serviceWorker' in navigator) {
 // ============================================================================
 
 let currentView = 'search'; // 'search' or 'bookmarks'
+let searchHistoryBlurTimeout = null; // Track blur timeout to prevent race conditions
 
 // ============================================================================
 // Global window functions (for onclick handlers in HTML)
@@ -116,12 +117,16 @@ window.togglePaperBookmark = function(buttonElement) {
 
     const isNowBookmarked = toggleBookmark(paper);
 
-    // Update button visual state
+    // Update button visual and ARIA state
     if (isNowBookmarked) {
         buttonElement.classList.add('bookmarked');
+        buttonElement.setAttribute('aria-pressed', 'true');
+        buttonElement.setAttribute('aria-label', 'Remove bookmark');
         buttonElement.title = 'Remove bookmark';
     } else {
         buttonElement.classList.remove('bookmarked');
+        buttonElement.setAttribute('aria-pressed', 'false');
+        buttonElement.setAttribute('aria-label', 'Bookmark this paper');
         buttonElement.title = 'Bookmark this paper';
     }
 
@@ -193,7 +198,9 @@ function populateSearchHistory() {
         const timeAgo = getTimeAgo(date);
 
         return `
-            <li onclick="selectHistoryItem('${item.query.replace(/'/g, "\\'")}')">
+            <li role="option"
+                onclick="selectHistoryItem('${item.query.replace(/'/g, "\\'")}')"
+                onkeypress="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectHistoryItem('${item.query.replace(/'/g, "\\'")}')}">
                 <span class="history-query">${item.query}</span>
                 <span class="history-meta">${timeAgo}</span>
                 <button class="history-delete-btn" onclick="event.stopPropagation(); deleteHistoryItem(${index})" title="Delete" tabindex="-1">×</button>
@@ -208,6 +215,7 @@ function populateSearchHistory() {
 function showSearchHistory() {
     populateSearchHistory();
     document.getElementById('searchHistoryDropdown').style.display = 'block';
+    document.getElementById('searchQuery').setAttribute('aria-expanded', 'true');
 }
 
 /**
@@ -215,6 +223,7 @@ function showSearchHistory() {
  */
 function hideSearchHistory() {
     document.getElementById('searchHistoryDropdown').style.display = 'none';
+    document.getElementById('searchQuery').setAttribute('aria-expanded', 'false');
 }
 
 /**
@@ -260,9 +269,13 @@ function updateBookmarkButtonStates() {
         const paperKey = button.dataset.paperKey;
         if (isBookmarked(paperKey)) {
             button.classList.add('bookmarked');
+            button.setAttribute('aria-pressed', 'true');
+            button.setAttribute('aria-label', 'Remove bookmark');
             button.title = 'Remove bookmark';
         } else {
             button.classList.remove('bookmarked');
+            button.setAttribute('aria-pressed', 'false');
+            button.setAttribute('aria-label', 'Bookmark this paper');
             button.title = 'Bookmark this paper';
         }
     });
@@ -364,16 +377,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Search input focus/blur for history dropdown
     searchInput.addEventListener('focus', () => {
+        // Clear any pending blur timeout to prevent race condition
+        if (searchHistoryBlurTimeout) {
+            clearTimeout(searchHistoryBlurTimeout);
+            searchHistoryBlurTimeout = null;
+        }
         showSearchHistory();
     });
 
     searchInput.addEventListener('blur', (e) => {
         // Delay hiding to allow clicking on history items
-        setTimeout(() => {
+        searchHistoryBlurTimeout = setTimeout(() => {
             // Only hide if not focusing on history dropdown
             if (!document.getElementById('searchHistoryDropdown').contains(document.activeElement)) {
                 hideSearchHistory();
             }
+            searchHistoryBlurTimeout = null;
         }, 200);
     });
 
@@ -384,9 +403,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (e.key === 'Escape') {
             hideSearchHistory();
-        } else if (e.key === 'Tab' && isDropdownVisible) {
-            // Prevent Tab from moving focus out of search input when dropdown is open
-            e.preventDefault();
         } else if (e.key === 'Enter' && isDropdownVisible) {
             // Ensure Enter always submits the form, never activates dropdown buttons
             e.preventDefault();

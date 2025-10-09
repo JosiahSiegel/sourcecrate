@@ -25,6 +25,9 @@
                                 placeholder="Search papers (e.g., machine learning, DOI, author)"
                                 required
                                 autocomplete="off"
+                                aria-controls="searchHistoryDropdown"
+                                aria-expanded="false"
+                                aria-haspopup="listbox"
                             >
                         </div>
                         <!-- Search History Dropdown -->
@@ -33,14 +36,12 @@
                                 <span>Recent Searches</span>
                                 <button type="button" id="clearHistoryBtn" class="clear-history-btn" title="Clear history" tabindex="-1">Clear</button>
                             </div>
-                            <ul id="searchHistoryList" class="search-history-list"></ul>
+                            <ul id="searchHistoryList" class="search-history-list" role="listbox"></ul>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="pdfOnly">
-                            <input type="checkbox" id="pdfOnly">
-                            Only Direct Download
-                        </label>
+                        <input type="checkbox" id="pdfOnly">
+                        <label for="pdfOnly">Only Direct Download</label>
                     </div>
                     <div class="search-actions">
                         <button type="submit" class="btn btn-primary">Search</button>
@@ -49,6 +50,12 @@
                         </button>
                     </div>
                 </form>
+                <!-- Live region for screen reader announcements -->
+                <div id="searchStatusLive"
+                     class="sr-only"
+                     role="status"
+                     aria-live="polite"
+                     aria-atomic="true"></div>
             </section>
 
 

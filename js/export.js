@@ -70,7 +70,8 @@ export function exportToBibTeX(papers) {
         // Determine entry type
         const isPreprint = paper.source?.toLowerCase().includes('arxiv') ||
                           paper.source?.toLowerCase().includes('preprint');
-        const entryType = isPreprint ? 'misc' : 'article';
+        const hasJournal = journal && journal.trim() !== '';
+        const entryType = (isPreprint || !hasJournal) ? 'misc' : 'article';
 
         let bibtex = `@${entryType}{${key},\n`;
         bibtex += `  title = {${title}},\n`;
@@ -98,7 +99,7 @@ export function exportToRIS(papers) {
     const entries = papers.map(paper => {
         const isPreprint = paper.source?.toLowerCase().includes('arxiv') ||
                           paper.source?.toLowerCase().includes('preprint');
-        const type = isPreprint ? 'UNPB' : 'JOUR'; // UNPB = unpublished, JOUR = journal article
+        const type = isPreprint ? 'INPR' : 'JOUR'; // INPR = in press/preprint, JOUR = journal article
 
         let ris = `TY  - ${type}\n`;
         ris += `TI  - ${paper.title || 'Untitled'}\n`;
@@ -183,8 +184,7 @@ export function exportToJSON(papers) {
             pdf_url: paper.pdf_url,
             source: paper.source,
             citation_count: paper.citation_count || 0,
-            is_open_access: paper.is_open_access || false,
-            relevance_score: paper.relevance_score
+            is_open_access: paper.is_open_access || false
         };
 
         // Include source links if available

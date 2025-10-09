@@ -334,8 +334,13 @@ export function buildPaperCard(paper, index, showBadge = true) {
     // DOI Badge with copy icon
     if (paper.doi) {
         const fullDoiUrl = getFullDoiUrl(paper.doi);
-        metadataBadges += `<span class="metadata-badge badge-doi" title="${fullDoiUrl} (click to copy)"
+        metadataBadges += `<span class="metadata-badge badge-doi"
+                                 title="${fullDoiUrl} (click to copy)"
                                  onclick="navigator.clipboard.writeText('${fullDoiUrl}')"
+                                 onkeypress="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigator.clipboard.writeText('${fullDoiUrl}')}"
+                                 tabindex="0"
+                                 role="button"
+                                 aria-label="Copy DOI to clipboard"
                                  style="cursor: pointer;">
                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.25rem;">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -406,7 +411,7 @@ export function buildPaperCard(paper, index, showBadge = true) {
                     <button class="bookmark-btn"
                             data-paper-key="${paperKey}"
                             onclick="window.togglePaperBookmark(this)"
-                            title="Bookmark this paper"
+                            aria-pressed="false"
                             aria-label="Bookmark this paper">
                         <svg class="bookmark-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
@@ -506,6 +511,9 @@ export function updateResultsSummary(count, searchComplete, effectiveThreshold =
         summaryDiv = document.createElement('div');
         summaryDiv.id = 'results-summary';
         summaryDiv.className = 'results-summary';
+        summaryDiv.setAttribute('role', 'status');
+        summaryDiv.setAttribute('aria-live', 'polite');
+        summaryDiv.setAttribute('aria-atomic', 'true');
 
         const resultsDiv = document.getElementById('results');
         resultsDiv.insertBefore(summaryDiv, resultsDiv.firstChild);
