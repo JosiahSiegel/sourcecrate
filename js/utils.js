@@ -516,3 +516,115 @@ export function sortByRelevance(results) {
         return titleA.localeCompare(titleB);
     });
 }
+
+/**
+ * Get human-readable time ago string from date
+ * @param {Date} date - Date object
+ * @returns {string} Time ago string (e.g., "2h ago", "just now")
+ */
+export function getTimeAgo(date) {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+}
+
+/**
+ * Filter papers by search query
+ * Searches across title, authors, abstract, and journal fields
+ * @param {Array} papers - Array of papers
+ * @param {string} query - Search query
+ * @returns {Array} Filtered papers
+ */
+export function filterBookmarksByQuery(papers, query) {
+    if (!query || query.trim() === '') {
+        return papers;
+    }
+
+    const normalizedQuery = query.toLowerCase().trim();
+
+    return papers.filter(paper => {
+        // Search in title
+        const titleMatch = (paper.title || '').toLowerCase().includes(normalizedQuery);
+
+        // Search in authors
+        const authorsText = Array.isArray(paper.authors)
+            ? paper.authors.join(' ')
+            : (paper.authors || '');
+        const authorsMatch = authorsText.toLowerCase().includes(normalizedQuery);
+
+        // Search in abstract
+        const abstractMatch = (paper.abstract || '').toLowerCase().includes(normalizedQuery);
+
+        // Search in journal
+        const journalMatch = (paper.journal || '').toLowerCase().includes(normalizedQuery);
+
+        return titleMatch || authorsMatch || abstractMatch || journalMatch;
+    });
+}
+
+/**
+ * Sort papers by specified criteria
+ * @param {Array} papers - Array of papers
+ * @param {string} sortOrder - Sort order option (date-desc, date-asc, title-asc, title-desc, year-desc, year-asc)
+ * @returns {Array} Sorted papers (new array, original not mutated)
+ */
+export function sortBookmarks(papers, sortOrder) {
+    const sorted = [...papers]; // Create copy to avoid mutating original
+
+    switch (sortOrder) {
+        case 'date-desc':
+            // Newest first (by bookmark timestamp)
+            return sorted.sort((a, b) => {
+                const timeA = a._bookmarked_at || 0;
+                const timeB = b._bookmarked_at || 0;
+                return timeB - timeA;
+            });
+
+        case 'date-asc':
+            // Oldest first (by bookmark timestamp)
+            return sorted.sort((a, b) => {
+                const timeA = a._bookmarked_at || 0;
+                const timeB = b._bookmarked_at || 0;
+                return timeA - timeB;
+            });
+
+        case 'title-asc':
+            // Title A-Z
+            return sorted.sort((a, b) => {
+                const titleA = (a.title || '').toLowerCase();
+                const titleB = (b.title || '').toLowerCase();
+                return titleA.localeCompare(titleB);
+            });
+
+        case 'title-desc':
+            // Title Z-A
+            return sorted.sort((a, b) => {
+                const titleA = (a.title || '').toLowerCase();
+                const titleB = (b.title || '').toLowerCase();
+                return titleB.localeCompare(titleA);
+            });
+
+        case 'year-desc':
+            // Year newest first
+            return sorted.sort((a, b) => {
+                const yearA = a.year || 0;
+                const yearB = b.year || 0;
+                return yearB - yearA;
+            });
+
+        case 'year-asc':
+            // Year oldest first
+            return sorted.sort((a, b) => {
+                const yearA = a.year || 0;
+                const yearB = b.year || 0;
+                return yearA - yearB;
+            });
+
+        default:
+            return sorted;
+    }
+}

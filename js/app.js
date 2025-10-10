@@ -2,8 +2,9 @@
 // APP.JS - Main entry point and event handlers
 // ============================================================================
 
-import { API_BASE_URL, DownloadReliability } from './state.js';
 import {
+    API_BASE_URL,
+    DownloadReliability,
     papersByKey,
     pdfOnlyFilter,
     renderedPaperKeys,
@@ -30,6 +31,25 @@ import {
     clearHistory,
     removeFromHistory
 } from './history.js';
+import {
+    getTimeAgo,
+    filterBookmarksByQuery,
+    sortBookmarks
+} from './utils.js';
+import {
+    populateSearchHistory,
+    showSearchHistory,
+    hideSearchHistory,
+    showBookmarksView,
+    showSearchView,
+    updateBookmarkButtonStates,
+    updateBookmarkCount,
+    renderBookmarks,
+    renderBookmarksForCollection,
+    renderCollectionsInline,
+    showCreateCollectionModal,
+    hideCreateCollectionModal
+} from './ui.js';
 
 // ============================================================================
 // Service Worker Registration - Cache API responses for instant repeat searches
@@ -102,7 +122,8 @@ function getPaperData(paperKey) {
 window.searchByTitle = function(title) {
     // Switch to search view if currently in bookmarks view
     if (currentView === 'bookmarks') {
-        showSearchView();
+        currentView = 'search';
+        showSearchView(papersByKey);
     }
 
     apiSearchByTitle(title, renderStreamingResults);
@@ -143,7 +164,7 @@ window.togglePaperBookmark = function(buttonElement) {
     if (currentView === 'bookmarks' && !isNowBookmarked) {
         const searchQuery = document.getElementById('bookmarksSearchInput').value;
         renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
-        renderCollectionsInline(); // Update counts
+        renderCollectionsInline(currentCollection); // Update counts
     }
 };
 
@@ -193,7 +214,7 @@ window.handleCollectionAdd = function(selectElement, paperKey) {
         // Re-render bookmarks to update collection indicators and counts
         const searchQuery = document.getElementById('bookmarksSearchInput').value;
         renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
-        renderCollectionsInline();
+        renderCollectionsInline(currentCollection);
     }
 };
 
@@ -217,7 +238,7 @@ window.handleRemoveFromCollection = function(buttonElement) {
             renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
 
             // Update collection counts
-            renderCollectionsInline();
+            renderCollectionsInline(currentCollection);
         }
     }
 };
@@ -256,58 +277,7 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
 // Helper Functions
 // ============================================================================
 
-/**
- * Update bookmark count badge
- */
-function updateBookmarkCount() {
-    const stats = getBookmarkStats();
-    document.getElementById('bookmarkCount').textContent = stats.totalBookmarks;
-}
-
-/**
- * Populate search history dropdown
- */
-function populateSearchHistory() {
-    const recentSearches = getRecentSearches(10);
-    const historyList = document.getElementById('searchHistoryList');
-
-    if (recentSearches.length === 0) {
-        historyList.innerHTML = '<li style="padding: 1rem; text-align: center; color: var(--text-tertiary);">No recent searches</li>';
-        return;
-    }
-
-    historyList.innerHTML = recentSearches.map((item, index) => {
-        const date = new Date(item.timestamp);
-        const timeAgo = getTimeAgo(date);
-
-        return `
-            <li role="option"
-                onclick="selectHistoryItem('${item.query.replace(/'/g, "\\'")}')"
-                onkeypress="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectHistoryItem('${item.query.replace(/'/g, "\\'")}')}">
-                <span class="history-query">${item.query}</span>
-                <span class="history-meta">${timeAgo}</span>
-                <button class="history-delete-btn" onclick="event.stopPropagation(); deleteHistoryItem(${index})" title="Delete" tabindex="-1">×</button>
-            </li>
-        `;
-    }).join('');
-}
-
-/**
- * Show search history dropdown
- */
-function showSearchHistory() {
-    populateSearchHistory();
-    document.getElementById('searchHistoryDropdown').style.display = 'block';
-    document.getElementById('searchQuery').setAttribute('aria-expanded', 'true');
-}
-
-/**
- * Hide search history dropdown
- */
-function hideSearchHistory() {
-    document.getElementById('searchHistoryDropdown').style.display = 'none';
-    document.getElementById('searchQuery').setAttribute('aria-expanded', 'false');
-}
+// updateBookmarkCount, populateSearchHistory, showSearchHistory, hideSearchHistory moved to ui.js
 
 /**
  * Select a history item
@@ -329,259 +299,11 @@ window.deleteHistoryItem = function(index) {
     populateSearchHistory();
 };
 
-/**
- * Get time ago string from date
- * @param {Date} date - Date object
- * @returns {string} Time ago string
- */
-function getTimeAgo(date) {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+// getTimeAgo, updateBookmarkButtonStates, showBookmarksView, showSearchView moved to ui.js
 
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-    return date.toLocaleDateString();
-}
-
-/**
- * Update bookmark button states for all visible cards
- */
-function updateBookmarkButtonStates() {
-    document.querySelectorAll('.bookmark-btn').forEach(button => {
-        const paperKey = button.dataset.paperKey;
-        if (isBookmarked(paperKey)) {
-            button.classList.add('bookmarked');
-            button.setAttribute('aria-pressed', 'true');
-            button.setAttribute('aria-label', 'Remove bookmark');
-            button.title = 'Remove bookmark';
-        } else {
-            button.classList.remove('bookmarked');
-            button.setAttribute('aria-pressed', 'false');
-            button.setAttribute('aria-label', 'Bookmark this paper');
-            button.title = 'Bookmark this paper';
-        }
-    });
-}
-
-/**
- * Show bookmarks view
- */
-function showBookmarksView() {
-    // Update view state
-    currentView = 'bookmarks';
-
-    // Hide search section and results
-    document.querySelector('.search-section').style.display = 'none';
-    document.querySelector('.results-section').classList.remove('active');
-
-    // Show bookmarks section
-    document.getElementById('bookmarksSection').style.display = 'block';
-
-    // Render collections inline
-    renderCollectionsInline();
-
-    // Render bookmarks for current collection
-    const searchQuery = document.getElementById('bookmarksSearchInput').value;
-    renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
-}
-
-/**
- * Show search view
- */
-function showSearchView() {
-    // Update view state
-    currentView = 'search';
-
-    // Show search section
-    document.querySelector('.search-section').style.display = 'block';
-
-    // Hide bookmarks section
-    document.getElementById('bookmarksSection').style.display = 'none';
-
-    // Only show results section if there are actual results
-    const resultsSection = document.querySelector('.results-section');
-    if (papersByKey.size === 0) {
-        // No search results - hide the entire results section
-        resultsSection.classList.remove('active');
-    } else {
-        // Has results - show the section
-        resultsSection.classList.add('active');
-    }
-}
-
-/**
- * Filter papers by search query
- * @param {Array} papers - Array of papers
- * @param {string} query - Search query
- * @returns {Array} Filtered papers
- */
-function filterBookmarksByQuery(papers, query) {
-    if (!query || query.trim() === '') {
-        return papers;
-    }
-
-    const normalizedQuery = query.toLowerCase().trim();
-
-    return papers.filter(paper => {
-        // Search in title
-        const titleMatch = (paper.title || '').toLowerCase().includes(normalizedQuery);
-
-        // Search in authors
-        const authorsText = Array.isArray(paper.authors)
-            ? paper.authors.join(' ')
-            : (paper.authors || '');
-        const authorsMatch = authorsText.toLowerCase().includes(normalizedQuery);
-
-        // Search in abstract
-        const abstractMatch = (paper.abstract || '').toLowerCase().includes(normalizedQuery);
-
-        // Search in journal
-        const journalMatch = (paper.journal || '').toLowerCase().includes(normalizedQuery);
-
-        return titleMatch || authorsMatch || abstractMatch || journalMatch;
-    });
-}
-
-/**
- * Sort papers by specified criteria
- * @param {Array} papers - Array of papers
- * @param {string} sortOrder - Sort order option
- * @returns {Array} Sorted papers
- */
-function sortBookmarks(papers, sortOrder) {
-    const sorted = [...papers]; // Create copy to avoid mutating original
-
-    switch (sortOrder) {
-        case 'date-desc':
-            // Newest first (by bookmark timestamp)
-            return sorted.sort((a, b) => {
-                const timeA = a._bookmarked_at || 0;
-                const timeB = b._bookmarked_at || 0;
-                return timeB - timeA;
-            });
-
-        case 'date-asc':
-            // Oldest first (by bookmark timestamp)
-            return sorted.sort((a, b) => {
-                const timeA = a._bookmarked_at || 0;
-                const timeB = b._bookmarked_at || 0;
-                return timeA - timeB;
-            });
-
-        case 'title-asc':
-            // Title A-Z
-            return sorted.sort((a, b) => {
-                const titleA = (a.title || '').toLowerCase();
-                const titleB = (b.title || '').toLowerCase();
-                return titleA.localeCompare(titleB);
-            });
-
-        case 'title-desc':
-            // Title Z-A
-            return sorted.sort((a, b) => {
-                const titleA = (a.title || '').toLowerCase();
-                const titleB = (b.title || '').toLowerCase();
-                return titleB.localeCompare(titleA);
-            });
-
-        case 'year-desc':
-            // Year newest first
-            return sorted.sort((a, b) => {
-                const yearA = a.year || 0;
-                const yearB = b.year || 0;
-                return yearB - yearA;
-            });
-
-        case 'year-asc':
-            // Year oldest first
-            return sorted.sort((a, b) => {
-                const yearA = a.year || 0;
-                const yearB = b.year || 0;
-                return yearA - yearB;
-            });
-
-        default:
-            return sorted;
-    }
-}
-
-/**
- * Render bookmarked papers with optional search and sort
- * @param {string} searchQuery - Optional search query to filter bookmarks
- * @param {string} sortOrder - Optional sort order
- */
-function renderBookmarks(searchQuery = '', sortOrder = 'date-desc') {
-    let bookmarkedPapers = getCollectionPapers('all');
-    const bookmarksResults = document.getElementById('bookmarksResults');
-
-    if (bookmarkedPapers.length === 0) {
-        bookmarksResults.innerHTML = '<p class="placeholder">No bookmarked papers yet. Star papers from search results to save them here!</p>';
-        return;
-    }
-
-    // Apply search filter
-    bookmarkedPapers = filterBookmarksByQuery(bookmarkedPapers, searchQuery);
-
-    // Apply sort order
-    bookmarkedPapers = sortBookmarks(bookmarkedPapers, sortOrder);
-
-    // Show filtered count if different from total
-    if (searchQuery && searchQuery.trim() !== '') {
-        const totalCount = getCollectionPapers('all').length;
-        if (bookmarkedPapers.length < totalCount) {
-            const countMessage = `<p style="margin-bottom: 1rem; color: var(--text-secondary);">Showing ${bookmarkedPapers.length} of ${totalCount} bookmarks</p>`;
-            bookmarksResults.innerHTML = countMessage;
-        }
-    }
-
-    // Show "no results" if filtered out everything
-    if (bookmarkedPapers.length === 0) {
-        bookmarksResults.innerHTML = '<p class="placeholder">No bookmarks match your search query.</p>';
-        return;
-    }
-
-    // Render bookmarked papers
-    const cardsHtml = bookmarkedPapers.map((paper, index) =>
-        buildPaperCard(paper, index, false)
-    ).join('');
-
-    if (searchQuery && searchQuery.trim() !== '') {
-        const totalCount = getCollectionPapers('all').length;
-        const countMessage = bookmarkedPapers.length < totalCount
-            ? `<p style="margin-bottom: 1rem; color: var(--text-secondary);">Showing ${bookmarkedPapers.length} of ${totalCount} bookmarks</p>`
-            : '';
-        bookmarksResults.innerHTML = countMessage + cardsHtml;
-    } else {
-        bookmarksResults.innerHTML = cardsHtml;
-    }
-
-    // Update bookmark button states
-    setTimeout(updateBookmarkButtonStates, 100);
-}
-
-/**
- * Render collections inline (plain text with bullets)
- */
-function renderCollectionsInline() {
-    const collections = getCollections();
-    const container = document.getElementById('collectionsInline');
-
-    if (!container) return;
-
-    // Build inline text with bullets
-    const collectionsHtml = Object.values(collections).map(collection => {
-        const papers = getCollectionPapers(collection.id);
-        const isActive = collection.id === currentCollection;
-        const activeClass = isActive ? 'active' : '';
-
-        const deleteBtn = collection.isDefault ? '' : ` <span class="collection-delete" onclick="event.preventDefault(); deleteCollectionConfirm('${collection.id}')" title="Delete">×</span>`;
-
-        return `<a href="#" class="collection-link ${activeClass}" data-collection="${collection.id}" onclick="event.preventDefault(); switchCollection('${collection.id}')">${collection.name} (${papers.length})</a>${deleteBtn}`;
-    }).join(' · ');
-
-    container.innerHTML = collectionsHtml;
-}
+// filterBookmarksByQuery, sortBookmarks imported from utils.js
+// renderBookmarks, renderCollectionsInline, renderBookmarksForCollection imported from ui.js
+// showCreateCollectionModal, hideCreateCollectionModal imported from ui.js
 
 /**
  * Switch to a different collection
@@ -591,94 +313,12 @@ window.switchCollection = function(collectionId) {
     currentCollection = collectionId;
 
     // Re-render collections to update active state
-    renderCollectionsInline();
+    renderCollectionsInline(currentCollection);
 
     // Re-render bookmarks for this collection
     const searchQuery = document.getElementById('bookmarksSearchInput').value;
     renderBookmarksForCollection(collectionId, searchQuery, currentSortOrder);
 };
-
-/**
- * Render bookmarks for a specific collection
- * @param {string} collectionId - Collection ID
- * @param {string} searchQuery - Search query
- * @param {string} sortOrder - Sort order
- */
-function renderBookmarksForCollection(collectionId, searchQuery = '', sortOrder = 'date-desc') {
-    let bookmarkedPapers = getCollectionPapers(collectionId);
-    const bookmarksResults = document.getElementById('bookmarksResults');
-
-    if (bookmarkedPapers.length === 0) {
-        bookmarksResults.innerHTML = '<p class="placeholder">No papers in this collection yet.</p>';
-        return;
-    }
-
-    // Apply search filter
-    bookmarkedPapers = filterBookmarksByQuery(bookmarkedPapers, searchQuery);
-
-    // Apply sort order
-    bookmarkedPapers = sortBookmarks(bookmarkedPapers, sortOrder);
-
-    // Show filtered count if different from total
-    if (searchQuery && searchQuery.trim() !== '') {
-        const totalCount = getCollectionPapers(collectionId).length;
-        if (bookmarkedPapers.length < totalCount) {
-            const countMessage = `<p style="margin-bottom: 1rem; color: var(--text-secondary);">Showing ${bookmarkedPapers.length} of ${totalCount} papers</p>`;
-            bookmarksResults.innerHTML = countMessage;
-        }
-    }
-
-    // Show "no results" if filtered out everything
-    if (bookmarkedPapers.length === 0) {
-        bookmarksResults.innerHTML = '<p class="placeholder">No papers match your search query.</p>';
-        return;
-    }
-
-    // Render bookmarked papers with collection selector
-    const collections = Object.values(getCollections());
-    const cardsHtml = bookmarkedPapers.map((paper, index) =>
-        buildPaperCard(paper, index, false, {
-            showCollectionSelector: true,
-            currentCollectionId: collectionId,
-            collections: collections
-        })
-    ).join('');
-
-    if (searchQuery && searchQuery.trim() !== '') {
-        const totalCount = getCollectionPapers(collectionId).length;
-        const countMessage = bookmarkedPapers.length < totalCount
-            ? `<p style="margin-bottom: 1rem; color: var(--text-secondary);">Showing ${bookmarkedPapers.length} of ${totalCount} papers</p>`
-            : '';
-        bookmarksResults.innerHTML = countMessage + cardsHtml;
-    } else {
-        bookmarksResults.innerHTML = cardsHtml;
-    }
-
-    // Update bookmark button states
-    setTimeout(updateBookmarkButtonStates, 100);
-}
-
-/**
- * Show create collection modal
- */
-function showCreateCollectionModal() {
-    const modal = document.getElementById('createCollectionModal');
-    modal.style.display = 'flex';
-
-    // Focus on name input
-    document.getElementById('collectionName').focus();
-}
-
-/**
- * Hide create collection modal
- */
-function hideCreateCollectionModal() {
-    const modal = document.getElementById('createCollectionModal');
-    modal.style.display = 'none';
-
-    // Clear form
-    document.getElementById('createCollectionForm').reset();
-}
 
 /**
  * Delete collection with confirmation
@@ -698,7 +338,7 @@ window.deleteCollectionConfirm = function(collectionId) {
             }
 
             // Re-render collections and bookmarks
-            renderCollectionsInline();
+            renderCollectionsInline(currentCollection);
             switchCollection(currentCollection);
         }
     }
@@ -748,6 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(searchHistoryBlurTimeout);
             searchHistoryBlurTimeout = null;
         }
+        populateSearchHistory();
         showSearchHistory();
     });
 
@@ -811,13 +452,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // View bookmarks button
     document.getElementById('viewBookmarksBtn').addEventListener('click', () => {
-        showBookmarksView();
+        currentView = 'bookmarks';
+        showBookmarksView(currentCollection, currentSortOrder);
     });
 
     // Back to search link
     document.getElementById('backToSearchLink').addEventListener('click', (e) => {
         e.preventDefault();
-        showSearchView();
+        currentView = 'search';
+        showSearchView(papersByKey);
     });
 
     // Export dropdown toggle
@@ -916,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Re-render bookmarks to update collection indicators and counts
                     const searchQuery = document.getElementById('bookmarksSearchInput').value;
                     renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
-                    renderCollectionsInline();
+                    renderCollectionsInline(currentCollection);
                 }
             }
         }
@@ -962,10 +605,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Close modal
             hideCreateCollectionModal();
 
-            // Re-render collections
-            renderCollectionsInline();
-
-            // Switch to the new collection
+            // Switch to the new collection (this will also render collections)
+            currentCollection = newCollection.id;
             switchCollection(newCollection.id);
         }
     });

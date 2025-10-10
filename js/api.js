@@ -2,7 +2,6 @@
 // API.JS - API client for academic paper search
 // ============================================================================
 
-import { showStatus } from './state.js';
 import {
     papersByKey,
     sourcesCompleted,
@@ -35,6 +34,17 @@ const clientSearchOrchestrator = new ClientSearchOrchestrator();
 const searchCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 let lastSearchKey = null;
+
+/**
+ * Update live region for screen readers (accessibility)
+ * @param {string} message - Status message
+ */
+function updateLiveRegion(message) {
+    const liveRegion = document.getElementById('searchStatusLive');
+    if (liveRegion) {
+        liveRegion.textContent = message;
+    }
+}
 
 /**
  * Generate cache key from search parameters
@@ -88,7 +98,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = '';
         document.querySelector('.results-section').classList.add('active');
-        showStatus(`Showing cached results for "${query}"`, 'info');
+        updateLiveRegion(`Showing cached results for "${query}"`);
         renderCallback();
 
         const summaryDiv = document.getElementById('results-summary');
@@ -127,7 +137,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
     document.querySelector('.results-section').classList.add('active');
 
     const filterText = pdfOnly ? ' (Direct Download only)' : '';
-    showStatus(`Searching for "${query}"${filterText}...`, 'loading');
+    updateLiveRegion(`Searching for "${query}"${filterText}...`);
 
     try {
         // Search with streaming-like callbacks across all sources
@@ -137,7 +147,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
             sources: defaultSources.filter(s => s !== 'semanticscholar'),
 
             onSourceStart: (data) => {
-                showStatus(`Searching ${data.source}...`, 'loading');
+                updateLiveRegion(`Searching ${data.source}...`);
             },
 
             onResults: (data) => {
@@ -277,7 +287,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         });
     } catch (error) {
         console.error('Search error:', error);
-        showStatus(`Error: ${error.message}`, 'error');
+        updateLiveRegion(`Error: ${error.message}`);
     }
 }
 

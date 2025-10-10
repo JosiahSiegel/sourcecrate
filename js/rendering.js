@@ -395,6 +395,37 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
     // Get paper key for bookmark functionality
     const paperKey = getPaperKey(paper);
 
+    // Collection badges (show which collections contain this paper, bookmarks view only)
+    let collectionBadges = '';
+    if (options.showCollectionSelector && options.collections) {
+        // Get collections this paper is already in
+        const paperCollections = getPaperCollections(paperKey);
+
+        // Filter to show actual collections (exclude 'all')
+        const currentCollections = options.collections.filter(c =>
+            c.id !== 'all' && paperCollections.includes(c.id)
+        );
+
+        if (currentCollections.length > 0) {
+            collectionBadges = `
+                <div class="collection-badges">
+                    <span class="collection-badges-label">In:</span>
+                    ${currentCollections.map(c =>
+                        `<span class="collection-badge">
+                            ${c.name}
+                            <button type="button"
+                                    class="collection-badge-remove"
+                                    data-paper-key="${paperKey}"
+                                    data-collection-id="${c.id}"
+                                    onclick="window.handleRemoveFromCollection(this)"
+                                    title="Remove from ${c.name}"
+                                    aria-label="Remove from ${c.name}">×</button>
+                        </span>`
+                    ).join('')}
+                </div>`;
+        }
+    }
+
     // Collection selector (minimal dropdown, bookmarks view only)
     let collectionSelector = '';
     if (options.showCollectionSelector && options.collections) {
@@ -452,6 +483,7 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
                     </button>
                 </div>
             </div>
+            ${collectionBadges}
             ${collectionSelector}
             ${metadataBadges ? `<div class="research-metadata-badges">${metadataBadges}</div>` : ''}
             <div class="paper-meta">

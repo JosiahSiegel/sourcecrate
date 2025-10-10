@@ -195,13 +195,3 @@ export function setBm25ScoringComplete(value) {
 export function setRenderedPaperKeys(value) {
     renderedPaperKeys = value;
 }
-
-// Utility functions
-export function showStatus(message, type = 'info') {
-    // Update live region for screen readers
-    const liveRegion = document.getElementById('searchStatusLive');
-    if (liveRegion) {
-        liveRegion.textContent = message;
-    }
-    // console.log(`[${type.toUpperCase()}] ${message}`);
-}
