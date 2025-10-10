@@ -17,7 +17,12 @@ import {
     toggleBookmark,
     getBookmarkStats,
     getCollectionPapers,
-    clearAllBookmarks
+    clearAllBookmarks,
+    getCollections,
+    createCollection,
+    deleteCollection,
+    addToCollection,
+    removeFromCollection
 } from './bookmarks.js';
 import {
     addToHistory,
@@ -42,6 +47,8 @@ if ('serviceWorker' in navigator) {
 // ============================================================================
 
 let currentView = 'search'; // 'search' or 'bookmarks'
+let currentCollection = 'all'; // Currently selected collection
+let currentSortOrder = 'date-desc'; // Current sort order for bookmarks
 let searchHistoryBlurTimeout = null; // Track blur timeout to prevent race conditions
 
 // ============================================================================
@@ -134,7 +141,84 @@ window.togglePaperBookmark = function(buttonElement) {
 
     // If in bookmarks view and paper was unbookmarked, refresh the list
     if (currentView === 'bookmarks' && !isNowBookmarked) {
-        renderBookmarks();
+        const searchQuery = document.getElementById('bookmarksSearchInput').value;
+        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+        renderCollectionsInline(); // Update counts
+    }
+};
+
+/**
+ * Handle collection change for a paper (exposed globally for onchange)
+ * @param {HTMLSelectElement} selectElement - Select element
+ */
+window.handleCollectionChange = function(selectElement) {
+    const paperKey = selectElement.dataset.paperKey;
+    const targetCollectionId = selectElement.value;
+
+    if (!targetCollectionId) {
+        // No collection selected (placeholder selected)
+        selectElement.value = ''; // Reset to placeholder
+        return;
+    }
+
+    // Add to target collection
+    if (addToCollection(paperKey, targetCollectionId)) {
+        // Reset dropdown to placeholder
+        selectElement.value = '';
+
+        // Re-render bookmarks to update collection indicators
+        const searchQuery = document.getElementById('bookmarksSearchInput').value;
+        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+    }
+};
+
+/**
+ * Handle adding a paper to a collection (exposed globally for onchange)
+ * @param {HTMLSelectElement} selectElement - Select element
+ * @param {string} paperKey - Paper key
+ */
+window.handleCollectionAdd = function(selectElement, paperKey) {
+    const targetCollectionId = selectElement.value;
+
+    if (!targetCollectionId) {
+        // No collection selected (placeholder selected)
+        return;
+    }
+
+    // Add to target collection
+    if (addToCollection(paperKey, targetCollectionId)) {
+        // Reset dropdown to placeholder
+        selectElement.value = '';
+
+        // Re-render bookmarks to update collection indicators and counts
+        const searchQuery = document.getElementById('bookmarksSearchInput').value;
+        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+        renderCollectionsInline();
+    }
+};
+
+/**
+ * Handle removing a paper from the current collection (exposed globally for onclick)
+ * @param {HTMLButtonElement} buttonElement - Remove button element
+ */
+window.handleRemoveFromCollection = function(buttonElement) {
+    const paperKey = buttonElement.dataset.paperKey;
+    const collectionId = buttonElement.dataset.collectionId;
+
+    if (collectionId === 'all') {
+        // Can't remove from "All Papers" - this would delete the bookmark
+        return;
+    }
+
+    if (confirm('Remove this paper from the current collection?')) {
+        if (removeFromCollection(paperKey, collectionId)) {
+            // Re-render bookmarks to reflect removal
+            const searchQuery = document.getElementById('bookmarksSearchInput').value;
+            renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+
+            // Update collection counts
+            renderCollectionsInline();
+        }
     }
 };
 
@@ -287,15 +371,19 @@ function showBookmarksView() {
     // Update view state
     currentView = 'bookmarks';
 
-    // Hide search section
+    // Hide search section and results
     document.querySelector('.search-section').style.display = 'none';
-    document.querySelector('.results-section').style.display = 'none';
+    document.querySelector('.results-section').classList.remove('active');
 
     // Show bookmarks section
     document.getElementById('bookmarksSection').style.display = 'block';
 
-    // Render bookmarks
-    renderBookmarks();
+    // Render collections inline
+    renderCollectionsInline();
+
+    // Render bookmarks for current collection
+    const searchQuery = document.getElementById('bookmarksSearchInput').value;
+    renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
 }
 
 /**
@@ -307,35 +395,314 @@ function showSearchView() {
 
     // Show search section
     document.querySelector('.search-section').style.display = 'block';
-    document.querySelector('.results-section').style.display = 'block';
 
     // Hide bookmarks section
     document.getElementById('bookmarksSection').style.display = 'none';
+
+    // Only show results section if there are actual results
+    const resultsSection = document.querySelector('.results-section');
+    if (papersByKey.size === 0) {
+        // No search results - hide the entire results section
+        resultsSection.classList.remove('active');
+    } else {
+        // Has results - show the section
+        resultsSection.classList.add('active');
+    }
 }
 
 /**
- * Render bookmarked papers
+ * Filter papers by search query
+ * @param {Array} papers - Array of papers
+ * @param {string} query - Search query
+ * @returns {Array} Filtered papers
  */
-function renderBookmarks() {
-    const bookmarkedPapers = getCollectionPapers('all');
-    const bookmarksResults = document.getElementById('bookmarksResults');
+function filterBookmarksByQuery(papers, query) {
+    if (!query || query.trim() === '') {
+        return papers;
+    }
 
-    // Update count
-    document.getElementById('allCount').textContent = bookmarkedPapers.length;
+    const normalizedQuery = query.toLowerCase().trim();
+
+    return papers.filter(paper => {
+        // Search in title
+        const titleMatch = (paper.title || '').toLowerCase().includes(normalizedQuery);
+
+        // Search in authors
+        const authorsText = Array.isArray(paper.authors)
+            ? paper.authors.join(' ')
+            : (paper.authors || '');
+        const authorsMatch = authorsText.toLowerCase().includes(normalizedQuery);
+
+        // Search in abstract
+        const abstractMatch = (paper.abstract || '').toLowerCase().includes(normalizedQuery);
+
+        // Search in journal
+        const journalMatch = (paper.journal || '').toLowerCase().includes(normalizedQuery);
+
+        return titleMatch || authorsMatch || abstractMatch || journalMatch;
+    });
+}
+
+/**
+ * Sort papers by specified criteria
+ * @param {Array} papers - Array of papers
+ * @param {string} sortOrder - Sort order option
+ * @returns {Array} Sorted papers
+ */
+function sortBookmarks(papers, sortOrder) {
+    const sorted = [...papers]; // Create copy to avoid mutating original
+
+    switch (sortOrder) {
+        case 'date-desc':
+            // Newest first (by bookmark timestamp)
+            return sorted.sort((a, b) => {
+                const timeA = a._bookmarked_at || 0;
+                const timeB = b._bookmarked_at || 0;
+                return timeB - timeA;
+            });
+
+        case 'date-asc':
+            // Oldest first (by bookmark timestamp)
+            return sorted.sort((a, b) => {
+                const timeA = a._bookmarked_at || 0;
+                const timeB = b._bookmarked_at || 0;
+                return timeA - timeB;
+            });
+
+        case 'title-asc':
+            // Title A-Z
+            return sorted.sort((a, b) => {
+                const titleA = (a.title || '').toLowerCase();
+                const titleB = (b.title || '').toLowerCase();
+                return titleA.localeCompare(titleB);
+            });
+
+        case 'title-desc':
+            // Title Z-A
+            return sorted.sort((a, b) => {
+                const titleA = (a.title || '').toLowerCase();
+                const titleB = (b.title || '').toLowerCase();
+                return titleB.localeCompare(titleA);
+            });
+
+        case 'year-desc':
+            // Year newest first
+            return sorted.sort((a, b) => {
+                const yearA = a.year || 0;
+                const yearB = b.year || 0;
+                return yearB - yearA;
+            });
+
+        case 'year-asc':
+            // Year oldest first
+            return sorted.sort((a, b) => {
+                const yearA = a.year || 0;
+                const yearB = b.year || 0;
+                return yearA - yearB;
+            });
+
+        default:
+            return sorted;
+    }
+}
+
+/**
+ * Render bookmarked papers with optional search and sort
+ * @param {string} searchQuery - Optional search query to filter bookmarks
+ * @param {string} sortOrder - Optional sort order
+ */
+function renderBookmarks(searchQuery = '', sortOrder = 'date-desc') {
+    let bookmarkedPapers = getCollectionPapers('all');
+    const bookmarksResults = document.getElementById('bookmarksResults');
 
     if (bookmarkedPapers.length === 0) {
         bookmarksResults.innerHTML = '<p class="placeholder">No bookmarked papers yet. Star papers from search results to save them here!</p>';
         return;
     }
 
+    // Apply search filter
+    bookmarkedPapers = filterBookmarksByQuery(bookmarkedPapers, searchQuery);
+
+    // Apply sort order
+    bookmarkedPapers = sortBookmarks(bookmarkedPapers, sortOrder);
+
+    // Show filtered count if different from total
+    if (searchQuery && searchQuery.trim() !== '') {
+        const totalCount = getCollectionPapers('all').length;
+        if (bookmarkedPapers.length < totalCount) {
+            const countMessage = `<p style="margin-bottom: 1rem; color: var(--text-secondary);">Showing ${bookmarkedPapers.length} of ${totalCount} bookmarks</p>`;
+            bookmarksResults.innerHTML = countMessage;
+        }
+    }
+
+    // Show "no results" if filtered out everything
+    if (bookmarkedPapers.length === 0) {
+        bookmarksResults.innerHTML = '<p class="placeholder">No bookmarks match your search query.</p>';
+        return;
+    }
+
     // Render bookmarked papers
-    bookmarksResults.innerHTML = bookmarkedPapers.map((paper, index) =>
+    const cardsHtml = bookmarkedPapers.map((paper, index) =>
         buildPaperCard(paper, index, false)
     ).join('');
+
+    if (searchQuery && searchQuery.trim() !== '') {
+        const totalCount = getCollectionPapers('all').length;
+        const countMessage = bookmarkedPapers.length < totalCount
+            ? `<p style="margin-bottom: 1rem; color: var(--text-secondary);">Showing ${bookmarkedPapers.length} of ${totalCount} bookmarks</p>`
+            : '';
+        bookmarksResults.innerHTML = countMessage + cardsHtml;
+    } else {
+        bookmarksResults.innerHTML = cardsHtml;
+    }
 
     // Update bookmark button states
     setTimeout(updateBookmarkButtonStates, 100);
 }
+
+/**
+ * Render collections inline (plain text with bullets)
+ */
+function renderCollectionsInline() {
+    const collections = getCollections();
+    const container = document.getElementById('collectionsInline');
+
+    if (!container) return;
+
+    // Build inline text with bullets
+    const collectionsHtml = Object.values(collections).map(collection => {
+        const papers = getCollectionPapers(collection.id);
+        const isActive = collection.id === currentCollection;
+        const activeClass = isActive ? 'active' : '';
+
+        const deleteBtn = collection.isDefault ? '' : ` <span class="collection-delete" onclick="event.preventDefault(); deleteCollectionConfirm('${collection.id}')" title="Delete">×</span>`;
+
+        return `<a href="#" class="collection-link ${activeClass}" data-collection="${collection.id}" onclick="event.preventDefault(); switchCollection('${collection.id}')">${collection.name} (${papers.length})</a>${deleteBtn}`;
+    }).join(' · ');
+
+    container.innerHTML = collectionsHtml;
+}
+
+/**
+ * Switch to a different collection
+ * @param {string} collectionId - Collection ID to switch to
+ */
+window.switchCollection = function(collectionId) {
+    currentCollection = collectionId;
+
+    // Re-render collections to update active state
+    renderCollectionsInline();
+
+    // Re-render bookmarks for this collection
+    const searchQuery = document.getElementById('bookmarksSearchInput').value;
+    renderBookmarksForCollection(collectionId, searchQuery, currentSortOrder);
+};
+
+/**
+ * Render bookmarks for a specific collection
+ * @param {string} collectionId - Collection ID
+ * @param {string} searchQuery - Search query
+ * @param {string} sortOrder - Sort order
+ */
+function renderBookmarksForCollection(collectionId, searchQuery = '', sortOrder = 'date-desc') {
+    let bookmarkedPapers = getCollectionPapers(collectionId);
+    const bookmarksResults = document.getElementById('bookmarksResults');
+
+    if (bookmarkedPapers.length === 0) {
+        bookmarksResults.innerHTML = '<p class="placeholder">No papers in this collection yet.</p>';
+        return;
+    }
+
+    // Apply search filter
+    bookmarkedPapers = filterBookmarksByQuery(bookmarkedPapers, searchQuery);
+
+    // Apply sort order
+    bookmarkedPapers = sortBookmarks(bookmarkedPapers, sortOrder);
+
+    // Show filtered count if different from total
+    if (searchQuery && searchQuery.trim() !== '') {
+        const totalCount = getCollectionPapers(collectionId).length;
+        if (bookmarkedPapers.length < totalCount) {
+            const countMessage = `<p style="margin-bottom: 1rem; color: var(--text-secondary);">Showing ${bookmarkedPapers.length} of ${totalCount} papers</p>`;
+            bookmarksResults.innerHTML = countMessage;
+        }
+    }
+
+    // Show "no results" if filtered out everything
+    if (bookmarkedPapers.length === 0) {
+        bookmarksResults.innerHTML = '<p class="placeholder">No papers match your search query.</p>';
+        return;
+    }
+
+    // Render bookmarked papers with collection selector
+    const collections = Object.values(getCollections());
+    const cardsHtml = bookmarkedPapers.map((paper, index) =>
+        buildPaperCard(paper, index, false, {
+            showCollectionSelector: true,
+            currentCollectionId: collectionId,
+            collections: collections
+        })
+    ).join('');
+
+    if (searchQuery && searchQuery.trim() !== '') {
+        const totalCount = getCollectionPapers(collectionId).length;
+        const countMessage = bookmarkedPapers.length < totalCount
+            ? `<p style="margin-bottom: 1rem; color: var(--text-secondary);">Showing ${bookmarkedPapers.length} of ${totalCount} papers</p>`
+            : '';
+        bookmarksResults.innerHTML = countMessage + cardsHtml;
+    } else {
+        bookmarksResults.innerHTML = cardsHtml;
+    }
+
+    // Update bookmark button states
+    setTimeout(updateBookmarkButtonStates, 100);
+}
+
+/**
+ * Show create collection modal
+ */
+function showCreateCollectionModal() {
+    const modal = document.getElementById('createCollectionModal');
+    modal.style.display = 'flex';
+
+    // Focus on name input
+    document.getElementById('collectionName').focus();
+}
+
+/**
+ * Hide create collection modal
+ */
+function hideCreateCollectionModal() {
+    const modal = document.getElementById('createCollectionModal');
+    modal.style.display = 'none';
+
+    // Clear form
+    document.getElementById('createCollectionForm').reset();
+}
+
+/**
+ * Delete collection with confirmation
+ * @param {string} collectionId - Collection ID to delete
+ */
+window.deleteCollectionConfirm = function(collectionId) {
+    const collections = getCollections();
+    const collection = collections[collectionId];
+
+    if (!collection) return;
+
+    if (confirm(`Delete collection "${collection.name}"? Papers will remain in "All Papers".`)) {
+        if (deleteCollection(collectionId)) {
+            // If we deleted the current collection, switch to "all"
+            if (currentCollection === collectionId) {
+                currentCollection = 'all';
+            }
+
+            // Re-render collections and bookmarks
+            renderCollectionsInline();
+            switchCollection(currentCollection);
+        }
+    }
+};
 
 // ============================================================================
 // Initialization
@@ -447,34 +814,35 @@ document.addEventListener('DOMContentLoaded', () => {
         showBookmarksView();
     });
 
-    // Back to search button
-    document.getElementById('backToSearchBtn').addEventListener('click', () => {
+    // Back to search link
+    document.getElementById('backToSearchLink').addEventListener('click', (e) => {
+        e.preventDefault();
         showSearchView();
     });
 
-    // Bookmarks export handlers - dynamically import export.js only when needed
-    document.getElementById('exportBookmarksBibTeXBtn').addEventListener('click', async () => {
-        const { exportPapers } = await import('./export.js');
-        const papers = getCollectionPapers('all');
-        exportPapers(papers, 'bibtex');
+    // Export dropdown toggle
+    document.getElementById('exportDropdownBtn').addEventListener('click', () => {
+        const menu = document.getElementById('exportDropdownMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
     });
 
-    document.getElementById('exportBookmarksRISBtn').addEventListener('click', async () => {
-        const { exportPapers } = await import('./export.js');
-        const papers = getCollectionPapers('all');
-        exportPapers(papers, 'ris');
+    // Close export dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const wrapper = document.querySelector('.export-dropdown-wrapper');
+        if (wrapper && !wrapper.contains(e.target)) {
+            document.getElementById('exportDropdownMenu').style.display = 'none';
+        }
     });
 
-    document.getElementById('exportBookmarksCSVBtn').addEventListener('click', async () => {
-        const { exportPapers } = await import('./export.js');
-        const papers = getCollectionPapers('all');
-        exportPapers(papers, 'csv');
-    });
-
-    document.getElementById('exportBookmarksJSONBtn').addEventListener('click', async () => {
-        const { exportPapers } = await import('./export.js');
-        const papers = getCollectionPapers('all');
-        exportPapers(papers, 'json');
+    // Bookmarks export handlers
+    document.querySelectorAll('#exportDropdownMenu button[data-format]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const format = btn.dataset.format;
+            const { exportPapers } = await import('./export.js');
+            const papers = getCollectionPapers(currentCollection);
+            exportPapers(papers, format);
+            document.getElementById('exportDropdownMenu').style.display = 'none';
+        });
     });
 
     // Clear all bookmarks
@@ -482,6 +850,123 @@ document.addEventListener('DOMContentLoaded', () => {
         if (clearAllBookmarks()) {
             renderBookmarks();
             updateBookmarkCount();
+        }
+    });
+
+    // Bookmarks search input - real-time filtering
+    document.getElementById('bookmarksSearchInput').addEventListener('input', (e) => {
+        const searchQuery = e.target.value;
+        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+    });
+
+    // Sort dropdown toggle
+    document.getElementById('sortDropdownBtn').addEventListener('click', () => {
+        const menu = document.getElementById('sortDropdownMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Close sort dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const sortWrapper = document.querySelector('.sort-dropdown-wrapper');
+        if (sortWrapper && !sortWrapper.contains(e.target)) {
+            document.getElementById('sortDropdownMenu').style.display = 'none';
+        }
+    });
+
+    // Sort dropdown option handlers
+    document.querySelectorAll('#sortDropdownMenu button[data-sort]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const sortOrder = btn.dataset.sort;
+            currentSortOrder = sortOrder;
+            const searchQuery = document.getElementById('bookmarksSearchInput').value;
+            renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+            document.getElementById('sortDropdownMenu').style.display = 'none';
+        });
+    });
+
+    // Collection add dropdown handlers (event delegation for dynamic content)
+    document.addEventListener('click', (e) => {
+        // Toggle collection dropdown
+        if (e.target.classList.contains('collection-add-dropdown-btn')) {
+            const wrapper = e.target.closest('.collection-add-dropdown-wrapper');
+            const menu = wrapper.querySelector('.collection-add-dropdown-menu');
+
+            // Close other collection dropdowns
+            document.querySelectorAll('.collection-add-dropdown-menu').forEach(m => {
+                if (m !== menu) m.style.display = 'none';
+            });
+
+            // Toggle this menu
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            e.stopPropagation();
+        }
+        // Handle collection selection
+        else if (e.target.closest('.collection-add-dropdown-menu')) {
+            const button = e.target;
+            if (button.dataset.collectionId && button.dataset.paperKey) {
+                const collectionId = button.dataset.collectionId;
+                const paperKey = button.dataset.paperKey;
+
+                // Add to collection
+                if (addToCollection(paperKey, collectionId)) {
+                    // Close dropdown
+                    const menu = button.closest('.collection-add-dropdown-menu');
+                    menu.style.display = 'none';
+
+                    // Re-render bookmarks to update collection indicators and counts
+                    const searchQuery = document.getElementById('bookmarksSearchInput').value;
+                    renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+                    renderCollectionsInline();
+                }
+            }
+        }
+        // Close all collection dropdowns when clicking outside
+        else {
+            document.querySelectorAll('.collection-add-dropdown-menu').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+    });
+
+    // Collections UI event handlers
+    document.getElementById('newCollectionLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        showCreateCollectionModal();
+    });
+
+    document.getElementById('cancelCollectionBtn').addEventListener('click', () => {
+        hideCreateCollectionModal();
+    });
+
+    document.querySelector('#createCollectionModal .modal-close').addEventListener('click', () => {
+        hideCreateCollectionModal();
+    });
+
+    // Close modal on background click
+    document.getElementById('createCollectionModal').addEventListener('click', (e) => {
+        if (e.target.id === 'createCollectionModal') {
+            hideCreateCollectionModal();
+        }
+    });
+
+    // Create collection form submit
+    document.getElementById('createCollectionForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('collectionName').value.trim();
+        const description = document.getElementById('collectionDescription').value.trim();
+
+        if (name) {
+            const newCollection = createCollection(name, description);
+
+            // Close modal
+            hideCreateCollectionModal();
+
+            // Re-render collections
+            renderCollectionsInline();
+
+            // Switch to the new collection
+            switchCollection(newCollection.id);
         }
     });
 

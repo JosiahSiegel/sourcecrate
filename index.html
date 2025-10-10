@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="css/components/papers.css">
     <link rel="stylesheet" href="css/components/tier1-features.css">
     <link rel="stylesheet" href="css/components/scroll-button.css">
+    <link rel="stylesheet" href="css/components/sponsor.css">
 </head>
 <body>
     <div class="container">
@@ -101,52 +102,105 @@
 
             <!-- Bookmarks Section -->
             <section id="bookmarksSection" class="bookmarks-section" style="display: none;">
-                <div class="bookmarks-header">
-                    <h2>Saved Papers</h2>
-                    <button type="button" id="backToSearchBtn" class="btn btn-secondary">
-                        ← Back to Search
-                    </button>
+                <!-- Minimal Header -->
+                <div class="bookmarks-header-minimal">
+                    <h2>SAVED PAPERS</h2>
+                    <a href="#" id="backToSearchLink" class="back-link">← Back</a>
                 </div>
 
-                <!-- Collections Tabs -->
-                <div id="collectionsTabs" class="collections-tabs">
-                    <button class="collection-tab active" data-collection="all">
-                        All Papers (<span id="allCount">0</span>)
-                    </button>
+                <!-- Collections and Controls (Single Row) -->
+                <div class="bookmarks-controls-row">
+                    <div class="collections-inline">
+                        <span id="collectionsInline">
+                            <!-- Collections will be rendered as plain text -->
+                        </span>
+                        <a href="#" id="newCollectionLink" class="new-collection-link">+ New</a>
+                    </div>
+                    <div class="controls-inline">
+                        <input
+                            type="text"
+                            id="bookmarksSearchInput"
+                            class="search-minimal"
+                            placeholder="Search..."
+                            autocomplete="off"
+                        >
+                        <div class="sort-dropdown-wrapper">
+                            <button type="button" id="sortDropdownBtn" class="sort-dropdown-btn">Sort ▾</button>
+                            <div id="sortDropdownMenu" class="sort-dropdown-menu" style="display: none;">
+                                <button type="button" data-sort="date-desc">Newest</button>
+                                <button type="button" data-sort="date-asc">Oldest</button>
+                                <button type="button" data-sort="title-asc">A-Z</button>
+                                <button type="button" data-sort="title-desc">Z-A</button>
+                                <button type="button" data-sort="year-desc">Year ↓</button>
+                                <button type="button" data-sort="year-asc">Year ↑</button>
+                            </div>
+                        </div>
+                        <div class="export-dropdown-wrapper">
+                            <button type="button" id="exportDropdownBtn" class="export-dropdown-btn">Export ▾</button>
+                            <div id="exportDropdownMenu" class="export-dropdown-menu" style="display: none;">
+                                <button type="button" data-format="bibtex">BibTeX</button>
+                                <button type="button" data-format="ris">RIS</button>
+                                <button type="button" data-format="csv">CSV</button>
+                                <button type="button" data-format="json">JSON</button>
+                                <div class="export-dropdown-separator"></div>
+                                <button type="button" id="clearAllBookmarksBtn">Clear All</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Bookmarks Export Toolbar -->
-                <div id="bookmarksExportToolbar" class="export-toolbar">
-                    <button type="button" id="exportBookmarksBibTeXBtn" class="btn btn-secondary">
-                        Export BibTeX
-                    </button>
-                    <button type="button" id="exportBookmarksRISBtn" class="btn btn-secondary">
-                        Export RIS
-                    </button>
-                    <button type="button" id="exportBookmarksCSVBtn" class="btn btn-secondary">
-                        Export CSV
-                    </button>
-                    <button type="button" id="exportBookmarksJSONBtn" class="btn btn-secondary">
-                        Export JSON
-                    </button>
-                    <button type="button" id="clearAllBookmarksBtn" class="btn btn-secondary" style="margin-left: auto;">
-                        Clear All
-                    </button>
-                </div>
+                <hr class="bookmarks-separator">
 
                 <div id="bookmarksResults" class="results-container">
-                    <p class="placeholder">No bookmarked papers yet</p>
+                    <p class="placeholder">No bookmarked papers yet. Star papers from search results to save them here!</p>
                 </div>
             </section>
+
+            <!-- Create Collection Modal -->
+            <div id="createCollectionModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Create New Collection</h3>
+                        <button type="button" class="modal-close" aria-label="Close">×</button>
+                    </div>
+                    <form id="createCollectionForm">
+                        <div class="form-group">
+                            <label for="collectionName">Collection Name</label>
+                            <input
+                                type="text"
+                                id="collectionName"
+                                placeholder="e.g., Literature Review"
+                                required
+                                autocomplete="off"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label for="collectionDescription">Description (optional)</label>
+                            <textarea
+                                id="collectionDescription"
+                                placeholder="Brief description of this collection..."
+                                rows="3"
+                            ></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelCollectionBtn">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                Create Collection
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
         </main>
 
         <footer>
             <p>
                 SourceCrate · Academic Paper Research ·
-                <a href="https://github.com/sponsors/josiahsiegel" target="_blank" rel="noopener noreferrer" class="footer-sponsor-link">
-                    <span class="sponsor-icon">❤️</span>
-                    <span>Sponsor</span>
+                <a href="sponsors.html" class="footer-sponsor-link">
+                    ❤️ Sponsor
                 </a>
             </p>
         </footer>

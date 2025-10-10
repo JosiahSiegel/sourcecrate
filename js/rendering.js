@@ -28,6 +28,9 @@ import {
     bm25ScoringComplete,
     DownloadReliability
 } from './state.js';
+import {
+    getPaperCollections
+} from './bookmarks.js';
 
 /**
  * Get best access URL for a source link
@@ -309,9 +312,13 @@ function buildSourceLinks(paper) {
  * @param {Object} paper - Paper object
  * @param {number} index - Card index
  * @param {boolean} showBadge - Show streaming badge
+ * @param {Object} options - Optional rendering options
+ * @param {boolean} options.showCollectionSelector - Show collection dropdown
+ * @param {string} options.currentCollectionId - Current collection ID
+ * @param {Array} options.collections - Array of collection objects
  * @returns {string} HTML for paper card
  */
-export function buildPaperCard(paper, index, showBadge = true) {
+export function buildPaperCard(paper, index, showBadge = true, options = {}) {
     // Limit authors display to first 5
     let authors;
     if (Array.isArray(paper.authors) && paper.authors.length > 5) {
@@ -388,6 +395,32 @@ export function buildPaperCard(paper, index, showBadge = true) {
     // Get paper key for bookmark functionality
     const paperKey = getPaperKey(paper);
 
+    // Collection selector (minimal dropdown, bookmarks view only)
+    let collectionSelector = '';
+    if (options.showCollectionSelector && options.collections) {
+        // Get collections this paper is already in
+        const paperCollections = getPaperCollections(paperKey);
+
+        // Filter out: 'all' collection, collections paper is already in
+        const availableCollections = options.collections.filter(c =>
+            c.id !== 'all' && !paperCollections.includes(c.id)
+        );
+
+        if (availableCollections.length > 0) {
+            collectionSelector = `
+                <div class="collection-add-dropdown-wrapper">
+                    <button type="button" class="collection-add-dropdown-btn" data-paper-key="${paperKey}">
+                        Add to collection... ▾
+                    </button>
+                    <div class="collection-add-dropdown-menu" style="display: none;">
+                        ${availableCollections.map(c =>
+                            `<button type="button" data-collection-id="${c.id}" data-paper-key="${paperKey}">${c.name}</button>`
+                        ).join('')}
+                    </div>
+                </div>`;
+        }
+    }
+
     return `
         <div class="paper-card ${showBadge ? 'paper-card-streaming' : ''}" data-paper-key="${paperKey}">
             <div class="paper-header">
@@ -419,6 +452,7 @@ export function buildPaperCard(paper, index, showBadge = true) {
                     </button>
                 </div>
             </div>
+            ${collectionSelector}
             ${metadataBadges ? `<div class="research-metadata-badges">${metadataBadges}</div>` : ''}
             <div class="paper-meta">
                 <span class="paper-authors">${authors}</span>

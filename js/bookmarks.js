@@ -190,6 +190,24 @@ export function getCollectionPapers(collectionId = 'all') {
 }
 
 /**
+ * Get all collections that contain a specific paper
+ * @param {string} paperKey - Paper key
+ * @returns {Array} Array of collection IDs
+ */
+export function getPaperCollections(paperKey) {
+    const collections = getCollections();
+    const collectionIds = [];
+
+    Object.values(collections).forEach(collection => {
+        if (collection.paperKeys.includes(paperKey)) {
+            collectionIds.push(collection.id);
+        }
+    });
+
+    return collectionIds;
+}
+
+/**
  * Create a new collection
  * @param {string} name - Collection name
  * @param {string} description - Optional description
