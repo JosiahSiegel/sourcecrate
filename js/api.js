@@ -83,7 +83,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         setSourcesCompleted(cached.sourcesCompleted);
         setTotalSources(cached.totalSources);
         setPdfOnlyFilter(pdfOnly);
-        setRelevanceThreshold(minRelevance);
+        setRelevanceThreshold(0); // Disable relevance filter for cached results - already vetted
         setCurrentQuery(query);
         setBm25ScoringComplete(true);
 

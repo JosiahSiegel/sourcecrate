@@ -79,20 +79,38 @@
 
             <!-- Results Section -->
             <section class="results-section">
-                <!-- Export Actions Toolbar -->
-                <div id="exportToolbar" class="export-toolbar" style="display: none;">
-                    <button type="button" id="exportBibTeXBtn" class="btn btn-secondary" title="Export to BibTeX format">
-                        Export BibTeX
-                    </button>
-                    <button type="button" id="exportRISBtn" class="btn btn-secondary" title="Export to RIS format">
-                        Export RIS
-                    </button>
-                    <button type="button" id="exportCSVBtn" class="btn btn-secondary" title="Export to CSV">
-                        Export CSV
-                    </button>
-                    <button type="button" id="exportJSONBtn" class="btn btn-secondary" title="Export to JSON">
-                        Export JSON
-                    </button>
+                <!-- Results Controls Row -->
+                <div id="resultsControlsRow" class="results-controls-row" style="display: none;">
+                    <div class="controls-inline">
+                        <input
+                            type="text"
+                            id="resultsSearchInput"
+                            class="search-minimal"
+                            placeholder="Filter results..."
+                            autocomplete="off"
+                        >
+                        <div class="sort-dropdown-wrapper">
+                            <button type="button" id="resultsSortDropdownBtn" class="sort-dropdown-btn">Sort ▾</button>
+                            <div id="resultsSortDropdownMenu" class="sort-dropdown-menu" style="display: none;">
+                                <button type="button" data-sort="relevance-desc">Relevance</button>
+                                <button type="button" data-sort="citations-desc">Citations ↓</button>
+                                <button type="button" data-sort="citations-asc">Citations ↑</button>
+                                <button type="button" data-sort="year-desc">Year ↓</button>
+                                <button type="button" data-sort="year-asc">Year ↑</button>
+                                <button type="button" data-sort="title-asc">A-Z</button>
+                                <button type="button" data-sort="title-desc">Z-A</button>
+                            </div>
+                        </div>
+                        <div class="export-dropdown-wrapper">
+                            <button type="button" id="resultsExportDropdownBtn" class="export-dropdown-btn">Export ▾</button>
+                            <div id="resultsExportDropdownMenu" class="export-dropdown-menu" style="display: none;">
+                                <button type="button" data-format="bibtex">BibTeX</button>
+                                <button type="button" data-format="ris">RIS</button>
+                                <button type="button" data-format="csv">CSV</button>
+                                <button type="button" data-format="json">JSON</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="results" class="results-container">

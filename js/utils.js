@@ -628,3 +628,70 @@ export function sortBookmarks(papers, sortOrder) {
             return sorted;
     }
 }
+
+/**
+ * Sort search results by specified criteria
+ * @param {Array} papers - Array of papers
+ * @param {string} sortOrder - Sort order option (relevance-desc, citations-desc, citations-asc, year-desc, year-asc, title-asc, title-desc)
+ * @returns {Array} Sorted papers (new array, original not mutated)
+ */
+export function sortSearchResults(papers, sortOrder) {
+    const sorted = [...papers]; // Create copy to avoid mutating original
+
+    switch (sortOrder) {
+        case 'relevance-desc':
+            // Relevance (default) - use sortByRelevance
+            return sortByRelevance(sorted);
+
+        case 'citations-desc':
+            // Citations high to low
+            return sorted.sort((a, b) => {
+                const citationsA = parseInt(a.citation_count) || 0;
+                const citationsB = parseInt(b.citation_count) || 0;
+                return citationsB - citationsA;
+            });
+
+        case 'citations-asc':
+            // Citations low to high
+            return sorted.sort((a, b) => {
+                const citationsA = parseInt(a.citation_count) || 0;
+                const citationsB = parseInt(b.citation_count) || 0;
+                return citationsA - citationsB;
+            });
+
+        case 'year-desc':
+            // Year newest first
+            return sorted.sort((a, b) => {
+                const yearA = a.year || 0;
+                const yearB = b.year || 0;
+                return yearB - yearA;
+            });
+
+        case 'year-asc':
+            // Year oldest first
+            return sorted.sort((a, b) => {
+                const yearA = a.year || 0;
+                const yearB = b.year || 0;
+                return yearA - yearB;
+            });
+
+        case 'title-asc':
+            // Title A-Z
+            return sorted.sort((a, b) => {
+                const titleA = (a.title || '').toLowerCase();
+                const titleB = (b.title || '').toLowerCase();
+                return titleA.localeCompare(titleB);
+            });
+
+        case 'title-desc':
+            // Title Z-A
+            return sorted.sort((a, b) => {
+                const titleA = (a.title || '').toLowerCase();
+                const titleB = (b.title || '').toLowerCase();
+                return titleB.localeCompare(titleA);
+            });
+
+        default:
+            return sortByRelevance(sorted);
+    }
+}

@@ -34,7 +34,8 @@ import {
 import {
     getTimeAgo,
     filterBookmarksByQuery,
-    sortBookmarks
+    sortBookmarks,
+    sortSearchResults
 } from './utils.js';
 import {
     populateSearchHistory,
@@ -69,6 +70,8 @@ if ('serviceWorker' in navigator) {
 let currentView = 'search'; // 'search' or 'bookmarks'
 let currentCollection = 'all'; // Currently selected collection
 let currentSortOrder = 'date-desc'; // Current sort order for bookmarks
+let currentSearchSortOrder = 'relevance-desc'; // Current sort order for search results
+let currentSearchFilterQuery = ''; // Current filter query for search results
 let searchHistoryBlurTimeout = null; // Track blur timeout to prevent race conditions
 
 // ============================================================================
@@ -126,7 +129,17 @@ window.searchByTitle = function(title) {
         showSearchView(papersByKey);
     }
 
-    apiSearchByTitle(title, renderStreamingResults);
+    // Reset filter/sort state for new search
+    currentSearchFilterQuery = '';
+    currentSearchSortOrder = 'relevance-desc';
+    if (document.getElementById('resultsSearchInput')) {
+        document.getElementById('resultsSearchInput').value = '';
+    }
+
+    // Use wrapper callback to pass current filter/sort state
+    apiSearchByTitle(title, () => {
+        renderStreamingResults(currentSearchFilterQuery, currentSearchSortOrder);
+    });
 };
 
 /**
@@ -262,15 +275,25 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
     // Hide search history dropdown
     hideSearchHistory();
 
+    // Reset search filter and sort state
+    currentSearchFilterQuery = '';
+    currentSearchSortOrder = 'relevance-desc';
+    if (document.getElementById('resultsSearchInput')) {
+        document.getElementById('resultsSearchInput').value = '';
+    }
+
     // Execute search across multiple academic databases
-    await searchWithClient(query, limit, pdfOnly, minRelevance, renderStreamingResults);
+    // Use wrapper callback to pass current filter/sort state
+    await searchWithClient(query, limit, pdfOnly, minRelevance, () => {
+        renderStreamingResults(currentSearchFilterQuery, currentSearchSortOrder);
+    });
 
     // Add to search history
     // Note: We'll update the result count after search completes
     addToHistory(query, 0, { pdfOnly, relevanceThreshold: minRelevance });
 
-    // Show export toolbar
-    document.getElementById('exportToolbar').style.display = 'flex';
+    // Show results controls row
+    document.getElementById('resultsControlsRow').style.display = 'flex';
 });
 
 // ============================================================================
@@ -374,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Re-render all papers with new filter applied
-            renderStreamingResults();
+            renderStreamingResults(currentSearchFilterQuery, currentSearchSortOrder);
 
             // Update bookmark button states after re-render
             setTimeout(updateBookmarkButtonStates, 100);
@@ -425,29 +448,65 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Export button handlers - dynamically import export.js only when needed
-    document.getElementById('exportBibTeXBtn').addEventListener('click', async () => {
-        const { exportPapers } = await import('./export.js');
-        const papers = Array.from(papersByKey.values());
-        exportPapers(papers, 'bibtex');
+    // Results search input - real-time filtering
+    document.getElementById('resultsSearchInput').addEventListener('input', (e) => {
+        currentSearchFilterQuery = e.target.value;
+        // Only render if we have papers (prevents interference during search initialization)
+        if (papersByKey.size > 0) {
+            renderStreamingResults(currentSearchFilterQuery, currentSearchSortOrder);
+        }
     });
 
-    document.getElementById('exportRISBtn').addEventListener('click', async () => {
-        const { exportPapers } = await import('./export.js');
-        const papers = Array.from(papersByKey.values());
-        exportPapers(papers, 'ris');
+    // Results sort dropdown toggle
+    document.getElementById('resultsSortDropdownBtn').addEventListener('click', () => {
+        const menu = document.getElementById('resultsSortDropdownMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
     });
 
-    document.getElementById('exportCSVBtn').addEventListener('click', async () => {
-        const { exportPapers } = await import('./export.js');
-        const papers = Array.from(papersByKey.values());
-        exportPapers(papers, 'csv');
+    // Close results sort dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const sortWrapper = document.querySelector('#resultsControlsRow .sort-dropdown-wrapper');
+        if (sortWrapper && !sortWrapper.contains(e.target)) {
+            document.getElementById('resultsSortDropdownMenu').style.display = 'none';
+        }
     });
 
-    document.getElementById('exportJSONBtn').addEventListener('click', async () => {
-        const { exportPapers } = await import('./export.js');
-        const papers = Array.from(papersByKey.values());
-        exportPapers(papers, 'json');
+    // Results sort dropdown option handlers
+    document.querySelectorAll('#resultsSortDropdownMenu button[data-sort]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const sortOrder = btn.dataset.sort;
+            currentSearchSortOrder = sortOrder;
+            renderStreamingResults(currentSearchFilterQuery, currentSearchSortOrder);
+            document.getElementById('resultsSortDropdownMenu').style.display = 'none';
+        });
+    });
+
+    // Results export dropdown toggle
+    document.getElementById('resultsExportDropdownBtn').addEventListener('click', () => {
+        const menu = document.getElementById('resultsExportDropdownMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Close results export dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const exportWrapper = document.querySelector('#resultsControlsRow .export-dropdown-wrapper');
+        if (exportWrapper && !exportWrapper.contains(e.target)) {
+            document.getElementById('resultsExportDropdownMenu').style.display = 'none';
+        }
+    });
+
+    // Results export handlers
+    document.querySelectorAll('#resultsExportDropdownMenu button[data-format]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const format = btn.dataset.format;
+            const { exportPapers } = await import('./export.js');
+            const { getFilteredAndSortedResults } = await import('./rendering.js');
+
+            // Export only the filtered and sorted results that are currently displayed
+            const papers = getFilteredAndSortedResults(currentSearchFilterQuery, currentSearchSortOrder);
+            exportPapers(papers, format);
+            document.getElementById('resultsExportDropdownMenu').style.display = 'none';
+        });
     });
 
     // View bookmarks button
@@ -471,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close export dropdown when clicking outside
     document.addEventListener('click', (e) => {
-        const wrapper = document.querySelector('.export-dropdown-wrapper');
+        const wrapper = document.querySelector('.bookmarks-controls-row .export-dropdown-wrapper');
         if (wrapper && !wrapper.contains(e.target)) {
             document.getElementById('exportDropdownMenu').style.display = 'none';
         }
@@ -482,7 +541,20 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', async () => {
             const format = btn.dataset.format;
             const { exportPapers } = await import('./export.js');
-            const papers = getCollectionPapers(currentCollection);
+
+            // Get collection papers
+            let papers = getCollectionPapers(currentCollection);
+
+            // Apply current filter from search input
+            const searchQuery = document.getElementById('bookmarksSearchInput').value;
+            if (searchQuery) {
+                papers = filterBookmarksByQuery(papers, searchQuery);
+            }
+
+            // Apply current sort order
+            papers = sortBookmarks(papers, currentSortOrder);
+
+            // Export the filtered and sorted results
             exportPapers(papers, format);
             document.getElementById('exportDropdownMenu').style.display = 'none';
         });
@@ -510,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close sort dropdown when clicking outside
     document.addEventListener('click', (e) => {
-        const sortWrapper = document.querySelector('.sort-dropdown-wrapper');
+        const sortWrapper = document.querySelector('.bookmarks-controls-row .sort-dropdown-wrapper');
         if (sortWrapper && !sortWrapper.contains(e.target)) {
             document.getElementById('sortDropdownMenu').style.display = 'none';
         }

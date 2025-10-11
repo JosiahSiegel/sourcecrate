@@ -16,7 +16,9 @@ import {
     deduplicateSourceLinks,
     getPaperKey,
     applyFilters,
-    sortByRelevance
+    sortByRelevance,
+    filterBookmarksByQuery,
+    sortSearchResults
 } from './utils.js';
 import {
     papersByKey,
@@ -26,6 +28,10 @@ import {
     relevanceThreshold,
     renderedPaperKeys,
     bm25ScoringComplete,
+    previousSortOrder,
+    previousFilterQuery,
+    setPreviousSortOrder,
+    setPreviousFilterQuery,
     DownloadReliability
 } from './state.js';
 import {
@@ -589,40 +595,95 @@ export function updateResultsSummary(count, searchComplete, effectiveThreshold =
 }
 
 /**
- * Render streaming results incrementally
+ * Get filtered and sorted results based on current filters and sort order
+ * @param {string} filterQuery - Optional filter query to search within results
+ * @param {string} sortOrder - Optional sort order (relevance-desc, citations-desc, etc.)
+ * @returns {Array} Filtered and sorted array of papers
  */
-export function renderStreamingResults() {
-    const resultsDiv = document.getElementById('results');
-
+export function getFilteredAndSortedResults(filterQuery = '', sortOrder = 'relevance-desc') {
     // Get all papers from source of truth
-    const allPapers = Array.from(papersByKey.values());
+    let allPapers = Array.from(papersByKey.values());
 
     if (allPapers.length === 0) {
-        resultsDiv.innerHTML = '<p class="no-results">Searching...</p>';
-        return;
+        return [];
     }
-
-    // Check if search is complete (all sources have reported results AND BM25 scoring done)
-    const searchComplete = totalSources > 0 && sourcesCompleted >= totalSources && bm25ScoringComplete;
 
     // Apply filters and sort
     // Use bm25ScoringComplete for relevance filter to avoid filtering on heuristic scores
     let filteredResults = applyFilters(allPapers, pdfOnlyFilter, relevanceThreshold, bm25ScoringComplete);
 
     // Dynamic threshold lowering: If BM25 complete and no results, progressively lower threshold
-    let effectiveThreshold = relevanceThreshold;
     if (bm25ScoringComplete && filteredResults.length === 0 && allPapers.length > 0) {
         const fallbackThresholds = [25, 15, 5, 0];
         for (const threshold of fallbackThresholds) {
             filteredResults = applyFilters(allPapers, pdfOnlyFilter, threshold, true);
             if (filteredResults.length > 0) {
-                effectiveThreshold = threshold;
                 break;
             }
         }
     }
 
-    filteredResults = sortByRelevance([...filteredResults]);
+    // Apply text filter if provided
+    if (filterQuery && filterQuery.trim() !== '') {
+        filteredResults = filterBookmarksByQuery(filteredResults, filterQuery);
+    }
+
+    // Apply sort order
+    filteredResults = sortSearchResults([...filteredResults], sortOrder);
+
+    return filteredResults;
+}
+
+/**
+ * Render streaming results incrementally
+ * @param {string} filterQuery - Optional filter query to search within results
+ * @param {string} sortOrder - Optional sort order (relevance-desc, citations-desc, etc.)
+ */
+export function renderStreamingResults(filterQuery = '', sortOrder = 'relevance-desc') {
+    const resultsDiv = document.getElementById('results');
+
+    // Check if we have any papers
+    if (papersByKey.size === 0) {
+        resultsDiv.innerHTML = '<p class="no-results">Searching...</p>';
+        return;
+    }
+
+    // Detect sort order change and force full re-render
+    if (sortOrder !== previousSortOrder) {
+        setPreviousSortOrder(sortOrder);
+
+        // Clear rendered state to force full re-render
+        renderedPaperKeys.clear();
+
+        // Clear results container to trigger fast path
+        const resultsContainer = document.getElementById('results-container');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '';
+        }
+    }
+
+    // Detect filter query change and force full re-render
+    if (filterQuery !== previousFilterQuery) {
+        setPreviousFilterQuery(filterQuery);
+
+        // Clear rendered state to force full re-render
+        renderedPaperKeys.clear();
+
+        // Clear results container to trigger fast path
+        const resultsContainer = document.getElementById('results-container');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '';
+        }
+    }
+
+    // Check if search is complete (all sources have reported results AND BM25 scoring done)
+    const searchComplete = totalSources > 0 && sourcesCompleted >= totalSources && bm25ScoringComplete;
+
+    // Get filtered and sorted results using shared function
+    const filteredResults = getFilteredAndSortedResults(filterQuery, sortOrder);
+
+    // Note: effectiveThreshold tracking removed since it's handled inside getFilteredAndSortedResults
+    const effectiveThreshold = relevanceThreshold;
 
     // Update summary (pass searchComplete to conditionally show count)
     updateResultsSummary(filteredResults.length, searchComplete, effectiveThreshold);

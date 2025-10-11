@@ -2,8 +2,6 @@
 
 Academic paper search that runs entirely in your browser. No backend needed.
 
-**Demo**: https://josiahsiegel.github.io/sourcecrate/
-
 ## How it works
 
 Searches academic databases in parallel. Everything happens client-side - the deduplication, BM25 relevance scoring, all of it.
@@ -18,8 +16,6 @@ cd sourcecrate
 open index.html
 ```
 
-Or just use the live demo above.
-
 Search for papers by keywords, DOI, or author names. Results stream in as each source responds. Click paper titles to search for similar work.
 
 ## Development
@@ -33,10 +29,6 @@ Vanilla JS with ES6 modules. No build step.
 ## Privacy
 
 Everything runs locally in your browser. No tracking, no data collection. Direct API calls to public academic databases.
-
-## Related
-
-[SourceCrate MCP](https://github.com/JosiahSiegel/sourcecrate-mcp) - Python MCP server version with PDF processing
 
 ## License
 

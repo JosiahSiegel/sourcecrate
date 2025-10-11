@@ -159,6 +159,8 @@ export let relevanceThreshold = 35; // Default 35%
 export let currentQuery = ''; // Store current search query for title matching
 export let renderedPaperKeys = new Set(); // Track which papers are already rendered
 export let bm25ScoringComplete = false; // Track whether BM25 scoring has finished
+export let previousSortOrder = 'relevance-desc'; // Track previous sort order to detect changes
+export let previousFilterQuery = ''; // Track previous filter query to detect changes
 
 // State setters (for modules to update state)
 
@@ -194,4 +196,12 @@ export function setBm25ScoringComplete(value) {
 
 export function setRenderedPaperKeys(value) {
     renderedPaperKeys = value;
+}
+
+export function setPreviousSortOrder(value) {
+    previousSortOrder = value;
+}
+
+export function setPreviousFilterQuery(value) {
+    previousFilterQuery = value;
 }

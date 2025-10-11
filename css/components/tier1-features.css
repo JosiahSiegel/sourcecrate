@@ -175,6 +175,39 @@
     align-items: center;
 }
 
+/* Results Controls Row (for search results page) */
+.results-controls-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+}
+
+.results-controls-row .controls-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .results-controls-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .results-controls-row .controls-inline {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .results-controls-row .search-minimal {
+        flex: 1;
+    }
+}
+
 /* Brutalist Minimal Bookmarks Header */
 .bookmarks-header-minimal {
     display: flex;
