@@ -34,6 +34,8 @@ const clientSearchOrchestrator = new ClientSearchOrchestrator();
 const searchCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 let lastSearchKey = null;
+let lastSearchTime = 0;
+const DEBOUNCE_MS = 300; // Debounce rapid searches within 300ms
 
 /**
  * Update live region for screen readers (accessibility)
@@ -62,14 +64,10 @@ function getSearchCacheKey(query, limit, pdfOnly) {
  * @param {Function} renderCallback - Callback to render results
  */
 export async function searchWithClient(query, limit, pdfOnly = false, minRelevance = 35, renderCallback) {
-    // Check cache
     const cacheKey = getSearchCacheKey(query, limit, pdfOnly);
+    const now = Date.now();
 
-    // If same query as last search, return immediately (debounce rapid Enter presses)
-    if (cacheKey === lastSearchKey) {
-        return;
-    }
-
+    // Check cache FIRST - instant O(1) lookup with no side effects
     const cached = searchCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
         // Use cached results
@@ -93,6 +91,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         paperProcessor.bm25.processedDocIds = new Set(cached.corpusStats.processedDocIds);
 
         lastSearchKey = cacheKey;
+        lastSearchTime = now;
 
         // Show cached results
         const resultsDiv = document.getElementById('results');
@@ -109,7 +108,13 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         return;
     }
 
+    // Debounce rapid duplicate searches (within 300ms) - only for cache MISSES
+    if (cacheKey === lastSearchKey && (now - lastSearchTime) < DEBOUNCE_MS) {
+        return;
+    }
+
     lastSearchKey = cacheKey;
+    lastSearchTime = now;
 
     // Reset state (papersByKey is now the single source of truth)
     papersByKey.clear();
@@ -289,6 +294,14 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         console.error('Search error:', error);
         updateLiveRegion(`Error: ${error.message}`);
     }
+}
+
+/**
+ * Clear search cache only (preserves debounce state for testing)
+ * @private
+ */
+export function clearSearchCache() {
+    searchCache.clear();
 }
 
 /**

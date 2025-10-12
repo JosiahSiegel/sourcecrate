@@ -23,7 +23,14 @@ Search for papers by keywords, DOI, or author names. Results stream in as each s
 Vanilla JS with ES6 modules. No build step.
 
 ```bash
-./dev-server.sh  # starts local server on port 3000
+npm run dev      # Start development server (port 3000)
+npm test         # Run unit + integration tests
+npm run test:e2e # Run E2E tests (port 3001)
+```
+
+For Git Bash/Linux/macOS users who prefer a custom port:
+```bash
+node dev-server.js 3001
 ```
 
 ## Privacy

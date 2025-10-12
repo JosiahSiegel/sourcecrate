@@ -1,0 +1,134 @@
+{
+  "mockPapers": [
+    {
+      "title": "Machine Learning: A Comprehensive Overview",
+      "authors": ["John Smith", "Jane Doe"],
+      "abstract": "This paper provides a comprehensive overview of machine learning techniques including supervised learning, unsupervised learning, and reinforcement learning. We discuss key algorithms and their applications in modern artificial intelligence systems.",
+      "doi": "10.1234/ml.2024.001",
+      "year": 2024,
+      "journal": "Journal of Machine Learning Research",
+      "url": "https://example.com/papers/ml-overview",
+      "pdf_url": "https://example.com/papers/ml-overview.pdf",
+      "source": "arXiv",
+      "citation_count": 150,
+      "is_open_access": true,
+      "relevance_score": 0.95
+    },
+    {
+      "title": "Deep Learning for Natural Language Processing",
+      "authors": ["Alice Johnson", "Bob Wilson"],
+      "abstract": "We present novel deep learning architectures for natural language processing tasks. Our approach achieves state-of-the-art results on benchmark datasets for sentiment analysis, machine translation, and question answering.",
+      "doi": "10.1234/nlp.2023.042",
+      "year": 2023,
+      "journal": "Computational Linguistics",
+      "url": "https://example.com/papers/deep-nlp",
+      "pdf_url": "https://example.com/papers/deep-nlp.pdf",
+      "source": "CrossRef",
+      "citation_count": 89,
+      "is_open_access": false,
+      "relevance_score": 0.87
+    },
+    {
+      "title": "Neural Networks in Computer Vision",
+      "authors": ["Emily Chen", "David Martinez"],
+      "abstract": "This work explores the application of neural networks to computer vision problems. We demonstrate improved performance on image classification, object detection, and semantic segmentation tasks.",
+      "doi": "10.1234/cv.2024.013",
+      "year": 2024,
+      "journal": "IEEE Transactions on Pattern Analysis",
+      "url": "https://example.com/papers/neural-cv",
+      "pdf_url": "https://example.com/papers/neural-cv.pdf",
+      "source": "OpenAlex",
+      "citation_count": 45,
+      "is_open_access": true,
+      "relevance_score": 0.72
+    },
+    {
+      "title": "Reinforcement Learning Applications in Robotics",
+      "authors": ["Michael Brown"],
+      "abstract": "We investigate reinforcement learning approaches for robotic control systems. Our experiments show that policy gradient methods outperform traditional control algorithms in complex manipulation tasks.",
+      "doi": "10.1234/rl.2023.028",
+      "year": 2023,
+      "journal": "Robotics and Autonomous Systems",
+      "url": "https://example.com/papers/rl-robotics",
+      "pdf_url": null,
+      "source": "PubMed",
+      "citation_count": 12,
+      "is_open_access": false,
+      "relevance_score": 0.58
+    },
+    {
+      "title": "Optimization Algorithms for Large-Scale Systems",
+      "authors": ["Sarah Lee", "Tom Anderson", "Lisa White"],
+      "abstract": "This paper presents novel optimization algorithms designed for large-scale distributed systems. We prove convergence guarantees and demonstrate practical efficiency improvements over existing methods.",
+      "doi": "10.1234/opt.2024.007",
+      "year": 2024,
+      "journal": "SIAM Journal on Optimization",
+      "url": "https://example.com/papers/optimization",
+      "pdf_url": "https://example.com/papers/optimization.pdf",
+      "source": "arXiv",
+      "citation_count": 203,
+      "is_open_access": true,
+      "relevance_score": 0.45
+    }
+  ],
+
+  "duplicatePaper": {
+    "title": "Machine Learning A Comprehensive Overview",
+    "authors": ["John Smith", "Jane Doe", "Additional Author"],
+    "abstract": "This paper provides a comprehensive overview of machine learning techniques including supervised learning, unsupervised learning, and reinforcement learning. We discuss key algorithms and their applications in modern artificial intelligence systems.",
+    "doi": "10.1234/ml.2024.001",
+    "year": 2024,
+    "journal": "Journal of Machine Learning Research",
+    "url": "https://different-source.com/papers/ml-overview",
+    "pdf_url": "https://different-source.com/papers/ml-overview.pdf",
+    "source": "Semantic Scholar",
+    "citation_count": 25,
+    "is_open_access": true
+  },
+
+  "lowQualityPaper": {
+    "title": "Some Random Paper",
+    "authors": [],
+    "abstract": null,
+    "doi": null,
+    "year": null,
+    "journal": null,
+    "url": "https://example.com/random",
+    "pdf_url": null,
+    "source": "Unknown",
+    "citation_count": 0,
+    "is_open_access": false,
+    "relevance_score": 0.15
+  },
+
+  "pdfAvailablePapers": [
+    {
+      "title": "Open Access Paper With PDF",
+      "authors": ["Test Author"],
+      "abstract": "Test abstract",
+      "doi": "10.1234/test.001",
+      "year": 2024,
+      "journal": "Test Journal",
+      "url": "https://example.com/test1",
+      "pdf_url": "https://example.com/test1.pdf",
+      "source": "arXiv",
+      "citation_count": 10,
+      "is_open_access": true,
+      "relevance_score": 0.6
+    },
+    {
+      "title": "Paper Without PDF",
+      "authors": ["Test Author 2"],
+      "abstract": "Test abstract 2",
+      "doi": "10.1234/test.002",
+      "year": 2024,
+      "journal": "Test Journal",
+      "url": "https://example.com/test2",
+      "pdf_url": null,
+      "source": "CrossRef",
+      "citation_count": 5,
+      "is_open_access": false,
+      "relevance_score": 0.5
+    }
+  ]
+}

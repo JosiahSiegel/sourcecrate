@@ -1,0 +1,245 @@
+{
+  "arxiv": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><feed xmlns=\"http://www.w3.org/2005/Atom\"><entry><id>http://arxiv.org/abs/2301.00001</id><title>Quantum Computing Applications in Machine Learning</title><summary>This paper explores the intersection of quantum computing and machine learning, demonstrating novel approaches to optimization problems.</summary><published>2023-01-01T00:00:00Z</published><author><name>Alice Johnson</name></author><author><name>Bob Smith</name></author><link href=\"http://arxiv.org/abs/2301.00001\" rel=\"alternate\" type=\"text/html\"/><link title=\"pdf\" href=\"http://arxiv.org/pdf/2301.00001\" rel=\"related\" type=\"application/pdf\"/></entry><entry><id>http://arxiv.org/abs/2301.00002</id><title>Neural Networks for Natural Language Processing</title><summary>We present a comprehensive survey of neural network architectures for NLP tasks including sentiment analysis and text generation.</summary><published>2023-01-02T00:00:00Z</published><author><name>Carol Davis</name></author><link href=\"http://arxiv.org/abs/2301.00002\" rel=\"alternate\" type=\"text/html\"/><link title=\"pdf\" href=\"http://arxiv.org/pdf/2301.00002\" rel=\"related\" type=\"application/pdf\"/></entry></feed>"
+  },
+  "crossref": {
+    "status": "ok",
+    "message-type": "work-list",
+    "message": {
+      "items": [
+        {
+          "DOI": "10.1000/test.001",
+          "title": ["Deep Learning for Computer Vision: A Comprehensive Survey"],
+          "author": [
+            {"given": "Emma", "family": "Wilson"},
+            {"given": "Frank", "family": "Martinez"}
+          ],
+          "published": {
+            "date-parts": [[2023, 6, 15]]
+          },
+          "abstract": "This survey provides a comprehensive overview of deep learning techniques applied to computer vision tasks.",
+          "container-title": ["Journal of Computer Vision"],
+          "is-referenced-by-count": 42,
+          "URL": "https://doi.org/10.1000/test.001",
+          "link": [
+            {
+              "URL": "https://example.com/paper.pdf",
+              "content-type": "application/pdf"
+            }
+          ]
+        },
+        {
+          "DOI": "10.1000/test.002",
+          "title": ["Reinforcement Learning in Robotics"],
+          "author": [
+            {"given": "Grace", "family": "Lee"}
+          ],
+          "published": {
+            "date-parts": [[2023, 8, 22]]
+          },
+          "abstract": "Exploring reinforcement learning algorithms for robotic control systems.",
+          "container-title": ["Robotics and Automation Journal"],
+          "is-referenced-by-count": 18,
+          "URL": "https://doi.org/10.1000/test.002"
+        }
+      ]
+    }
+  },
+  "pubmed": {
+    "json": {
+      "esearchresult": {
+        "count": "2",
+        "retmax": "2",
+        "retstart": "0",
+        "idlist": ["37000001", "37000002"]
+      }
+    },
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE PubmedArticleSet PUBLIC \"-//NLM//DTD PubMedArticle, 1st January 2023//EN\" \"https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_230101.dtd\"><PubmedArticleSet><PubmedArticle><MedlineCitation><PMID>37000001</PMID><Article><ArticleTitle>Advances in Immunology: T Cell Function</ArticleTitle><Abstract><AbstractText>This study examines T cell responses in various immune conditions.</AbstractText></Abstract><AuthorList><Author><ForeName>Sarah</ForeName><LastName>Johnson</LastName></Author><Author><ForeName>Michael</ForeName><LastName>Chen</LastName></Author></AuthorList><Journal><Title>Journal of Immunology</Title></Journal></Article><PubDate><Year>2023</Year></PubDate></MedlineCitation><ArticleIdList><ArticleId IdType=\"pubmed\">37000001</ArticleId><ArticleId IdType=\"doi\">10.4000/immunology.001</ArticleId><ArticleId IdType=\"pmc\">PMC10000001</ArticleId></ArticleIdList></PubmedArticle><PubmedArticle><MedlineCitation><PMID>37000002</PMID><Article><ArticleTitle>Cancer Biomarkers and Diagnostics</ArticleTitle><Abstract><AbstractText>We identify novel biomarkers for early cancer detection.</AbstractText></Abstract><AuthorList><Author><ForeName>David</ForeName><LastName>Williams</LastName></Author></AuthorList><Journal><Title>Cancer Research Journal</Title></Journal></Article><PubDate><Year>2023</Year></PubDate></MedlineCitation><ArticleIdList><ArticleId IdType=\"pubmed\">37000002</ArticleId><ArticleId IdType=\"doi\">10.4000/cancer.002</ArticleId></ArticleIdList></PubmedArticle></PubmedArticleSet>"
+  },
+  "openalex": {
+    "results": [
+      {
+        "id": "https://openalex.org/W3000000001",
+        "title": "CRISPR Gene Editing: Recent Advances and Clinical Applications",
+        "authorships": [
+          {"author": {"display_name": "Henry Chen"}},
+          {"author": {"display_name": "Isabel Rodriguez"}}
+        ],
+        "publication_year": 2023,
+        "doi": "https://doi.org/10.1001/biotech.2023.001",
+        "abstract_inverted_index": {
+          "This": [0],
+          "paper": [1],
+          "reviews": [2],
+          "recent": [3],
+          "advances": [4],
+          "in": [5, 11],
+          "CRISPR": [6],
+          "gene": [7],
+          "editing": [8],
+          "technology": [9],
+          "and": [10],
+          "clinical": [12],
+          "applications": [13]
+        },
+        "open_access": {
+          "is_oa": true,
+          "oa_url": "https://example.com/crispr-paper.pdf"
+        },
+        "primary_location": {
+          "source": {"display_name": "Nature Biotechnology"},
+          "pdf_url": "https://example.com/crispr-paper.pdf"
+        },
+        "cited_by_count": 156
+      },
+      {
+        "id": "https://openalex.org/W3000000002",
+        "title": "Immunotherapy Approaches for Cancer Treatment",
+        "authorships": [
+          {"author": {"display_name": "Julia Thompson"}}
+        ],
+        "publication_year": 2023,
+        "doi": "https://doi.org/10.1001/oncology.2023.002",
+        "open_access": {
+          "is_oa": false
+        },
+        "primary_location": {
+          "source": {"display_name": "Journal of Clinical Oncology"}
+        },
+        "cited_by_count": 89
+      }
+    ]
+  },
+  "doaj": {
+    "results": [
+      {
+        "id": "0123456789abcdef",
+        "bibjson": {
+          "title": "Open Access Publishing in Scientific Research",
+          "author": [
+            {"name": "Kevin Park"},
+            {"name": "Laura Anderson"}
+          ],
+          "year": "2023",
+          "abstract": "This article examines the impact of open access publishing on scientific research dissemination.",
+          "journal": {
+            "title": "Journal of Open Science"
+          },
+          "identifier": [
+            {
+              "type": "doi",
+              "id": "10.2000/openaccess.001"
+            }
+          ],
+          "link": [
+            {
+              "type": "fulltext",
+              "url": "https://example.com/openaccess.pdf"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "europepmc": {
+    "resultList": {
+      "result": [
+        {
+          "id": "38000001",
+          "title": "Microbiome Research: Implications for Human Health",
+          "authorString": "Michael Brown, Nancy White",
+          "pubYear": "2023",
+          "abstractText": "We investigate the human microbiome and its relationship to various health conditions.",
+          "doi": "10.3000/microbiome.001",
+          "journalTitle": "Microbiology Today",
+          "citedByCount": 67,
+          "hasFullTextUrlList": {
+            "hasFullTextUrl": "Y"
+          },
+          "fullTextUrlList": {
+            "fullTextUrl": [
+              {
+                "url": "https://example.com/microbiome.pdf",
+                "documentStyle": "pdf"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "unpaywall": {
+    "doi": "10.1000/test.001",
+    "title": "Sample Paper for Testing",
+    "oa_status": "gold",
+    "best_oa_location": {
+      "url_for_pdf": "https://example.com/sample.pdf",
+      "url": "https://example.com/sample"
+    }
+  },
+  "datacite": {
+    "data": [
+      {
+        "id": "10.5000/datacite.001",
+        "type": "dois",
+        "attributes": {
+          "doi": "10.5000/datacite.001",
+          "titles": [
+            {"title": "Climate Change Data Repository 2023"}
+          ],
+          "creators": [
+            {"name": "Oliver Green"},
+            {"name": "Patricia Clark"}
+          ],
+          "publicationYear": 2023,
+          "descriptions": [
+            {
+              "description": "Comprehensive climate data from global monitoring stations."
+            }
+          ],
+          "publisher": "DataCite Repository",
+          "url": "https://datacite.example.com/dataset/001",
+          "contentUrl": [
+            "https://datacite.example.com/dataset/001.pdf"
+          ]
+        }
+      }
+    ]
+  },
+  "zenodo": {
+    "hits": {
+      "hits": [
+        {
+          "id": 7000001,
+          "doi": "10.5281/zenodo.7000001",
+          "metadata": {
+            "title": "Open Research Dataset: Social Media Analysis",
+            "creators": [
+              {"name": "Quinn Martinez"},
+              {"name": "Rachel Kim"}
+            ],
+            "publication_date": "2023-09-10",
+            "description": "Dataset containing social media interactions for research purposes.",
+            "access_right": "open",
+            "journal": {
+              "title": "Zenodo Repository"
+            }
+          },
+          "links": {
+            "self": "https://zenodo.org/api/records/7000001",
+            "doi": "https://doi.org/10.5281/zenodo.7000001",
+            "files": "https://zenodo.org/api/records/7000001/files"
+          },
+          "files": [
+            {
+              "links": {
+                "self": "https://zenodo.org/api/records/7000001/files/dataset.pdf"
+              },
+              "type": "pdf"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
