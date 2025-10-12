@@ -117,8 +117,12 @@ async function cacheAPIRequest(request) {
     }
 
     try {
-        // Fetch fresh data
-        const response = await fetch(request);
+        // Fetch fresh data with 30s timeout (2x client timeout for safety margin)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        const response = await fetch(request, { signal: controller.signal });
+        clearTimeout(timeoutId);
 
         // Cache successful responses
         if (response.ok) {
