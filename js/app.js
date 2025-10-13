@@ -23,7 +23,8 @@ import {
     createCollection,
     deleteCollection,
     addToCollection,
-    removeFromCollection
+    removeFromCollection,
+    setReadingStatus
 } from './bookmarks.js';
 import {
     addToHistory,
@@ -45,6 +46,7 @@ import {
     showSearchView,
     updateBookmarkButtonStates,
     updateBookmarkCount,
+    updateReadingStats,
     renderBookmarks,
     renderBookmarksForCollection,
     renderCollectionsInline,
@@ -70,6 +72,7 @@ if ('serviceWorker' in navigator) {
 let currentView = 'search'; // 'search' or 'bookmarks'
 let currentCollection = 'all'; // Currently selected collection
 let currentSortOrder = 'date-desc'; // Current sort order for bookmarks
+let currentStatusFilter = 'all'; // Current status filter for bookmarks ('all', 'to_read', 'reading', 'read', 'important')
 let currentSearchSortOrder = 'relevance-desc'; // Current sort order for search results
 let currentSearchFilterQuery = ''; // Current filter query for search results
 let searchHistoryBlurTimeout = null; // Track blur timeout to prevent race conditions
@@ -176,7 +179,7 @@ window.togglePaperBookmark = function(buttonElement) {
     // If in bookmarks view and paper was unbookmarked, refresh the list
     if (currentView === 'bookmarks' && !isNowBookmarked) {
         const searchQuery = document.getElementById('bookmarksSearchInput').value;
-        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, currentStatusFilter);
         renderCollectionsInline(currentCollection); // Update counts
     }
 };
@@ -202,7 +205,7 @@ window.handleCollectionChange = function(selectElement) {
 
         // Re-render bookmarks to update collection indicators
         const searchQuery = document.getElementById('bookmarksSearchInput').value;
-        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, currentStatusFilter);
     }
 };
 
@@ -226,7 +229,7 @@ window.handleCollectionAdd = function(selectElement, paperKey) {
 
         // Re-render bookmarks to update collection indicators and counts
         const searchQuery = document.getElementById('bookmarksSearchInput').value;
-        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, currentStatusFilter);
         renderCollectionsInline(currentCollection);
     }
 };
@@ -248,7 +251,7 @@ window.handleRemoveFromCollection = function(buttonElement) {
         if (removeFromCollection(paperKey, collectionId)) {
             // Re-render bookmarks to reflect removal
             const searchQuery = document.getElementById('bookmarksSearchInput').value;
-            renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+            renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, currentStatusFilter);
 
             // Update collection counts
             renderCollectionsInline(currentCollection);
@@ -335,12 +338,15 @@ window.deleteHistoryItem = function(index) {
 window.switchCollection = function(collectionId) {
     currentCollection = collectionId;
 
+    // Update progress bar for this collection
+    updateReadingStats(collectionId);
+
     // Re-render collections to update active state
     renderCollectionsInline(currentCollection);
 
     // Re-render bookmarks for this collection
     const searchQuery = document.getElementById('bookmarksSearchInput').value;
-    renderBookmarksForCollection(collectionId, searchQuery, currentSortOrder);
+    renderBookmarksForCollection(collectionId, searchQuery, currentSortOrder, currentStatusFilter);
 };
 
 /**
@@ -523,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // View bookmarks button
     document.getElementById('viewBookmarksBtn').addEventListener('click', () => {
         currentView = 'bookmarks';
-        showBookmarksView(currentCollection, currentSortOrder);
+        showBookmarksView(currentCollection, currentSortOrder, currentStatusFilter);
     });
 
     // Back to search link
@@ -603,7 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bookmarks search input - real-time filtering
     document.getElementById('bookmarksSearchInput').addEventListener('input', (e) => {
         const searchQuery = e.target.value;
-        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+        renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, currentStatusFilter);
     });
 
     // Sort dropdown toggle
@@ -626,16 +632,54 @@ document.addEventListener('DOMContentLoaded', () => {
             const sortOrder = btn.dataset.sort;
             currentSortOrder = sortOrder;
             const searchQuery = document.getElementById('bookmarksSearchInput').value;
-            renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+            renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, currentStatusFilter);
             document.getElementById('sortDropdownMenu').style.display = 'none';
+        });
+    });
+
+    // Status filter dropdown toggle
+    document.getElementById('statusFilterDropdownBtn').addEventListener('click', () => {
+        const menu = document.getElementById('statusFilterDropdownMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Close status filter dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const statusFilterWrapper = document.querySelector('.bookmarks-controls-row .status-filter-dropdown-wrapper');
+        if (statusFilterWrapper && !statusFilterWrapper.contains(e.target)) {
+            document.getElementById('statusFilterDropdownMenu').style.display = 'none';
+        }
+    });
+
+    // Status filter dropdown option handlers
+    document.querySelectorAll('#statusFilterDropdownMenu button[data-status]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const status = btn.dataset.status;
+            currentStatusFilter = status;
+
+            // Update button label
+            const statusLabels = {
+                'all': 'All',
+                'to_read': 'To Read',
+                'reading': 'Reading',
+                'read': 'Read',
+                'important': 'Important'
+            };
+            document.getElementById('statusFilterDropdownBtn').textContent = `Status: ${statusLabels[status]} ▾`;
+
+            // Re-render bookmarks with new status filter
+            const searchQuery = document.getElementById('bookmarksSearchInput').value;
+            renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, currentStatusFilter);
+            document.getElementById('statusFilterDropdownMenu').style.display = 'none';
         });
     });
 
     // Collection add dropdown handlers (event delegation for dynamic content)
     document.addEventListener('click', (e) => {
         // Toggle collection dropdown
-        if (e.target.classList.contains('collection-add-dropdown-btn')) {
-            const wrapper = e.target.closest('.collection-add-dropdown-wrapper');
+        if (e.target.closest('.collection-add-dropdown-btn')) {
+            const button = e.target.closest('.collection-add-dropdown-btn');
+            const wrapper = button.closest('.collection-add-dropdown-wrapper');
             const menu = wrapper.querySelector('.collection-add-dropdown-menu');
 
             // Close other collection dropdowns
@@ -662,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Re-render bookmarks to update collection indicators and counts
                     const searchQuery = document.getElementById('bookmarksSearchInput').value;
-                    renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+                    renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, currentStatusFilter);
                     renderCollectionsInline(currentCollection);
                 }
             }
@@ -671,6 +715,51 @@ document.addEventListener('DOMContentLoaded', () => {
         else {
             document.querySelectorAll('.collection-add-dropdown-menu').forEach(menu => {
                 menu.style.display = 'none';
+            });
+        }
+    });
+
+    // Reading status dropdown handlers (event delegation for dynamic content)
+    document.addEventListener('click', (e) => {
+        // Toggle reading status dropdown
+        if (e.target.closest('.reading-status-btn')) {
+            const button = e.target.closest('.reading-status-btn');
+            const wrapper = button.closest('.reading-status-wrapper');
+            const dropdown = wrapper.querySelector('.reading-status-dropdown');
+
+            // Close other status dropdowns
+            document.querySelectorAll('.reading-status-dropdown').forEach(d => {
+                if (d !== dropdown) d.style.display = 'none';
+            });
+
+            // Toggle this dropdown
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            e.stopPropagation();
+        }
+        // Handle status selection
+        else if (e.target.closest('.status-option')) {
+            const button = e.target.closest('.status-option');
+            const paperKey = button.dataset.paperKey;
+            const newStatus = button.dataset.status;
+
+            // Update status
+            if (setReadingStatus(paperKey, newStatus)) {
+                // Close dropdown
+                const dropdown = button.closest('.reading-status-dropdown');
+                dropdown.style.display = 'none';
+
+                // Update reading stats dashboard for current collection
+                updateReadingStats(currentCollection);
+
+                // Re-render bookmarks to update status indicators
+                const searchQuery = document.getElementById('bookmarksSearchInput').value;
+                renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, currentStatusFilter);
+            }
+        }
+        // Close all status dropdowns when clicking outside
+        else {
+            document.querySelectorAll('.reading-status-dropdown').forEach(dropdown => {
+                dropdown.style.display = 'none';
             });
         }
     });

@@ -35,7 +35,8 @@ import {
     DownloadReliability
 } from './state.js';
 import {
-    getPaperCollections
+    getPaperCollections,
+    getReadingStatus
 } from './bookmarks.js';
 
 /**
@@ -263,6 +264,11 @@ function buildSourceLinks(paper) {
         sortedPages.forEach(access => {
             if (!access.url || !isValidUrl(access.url)) return;
 
+            const isDoiUrl = access.url.includes('doi.org/');
+
+            // Skip DOI URLs - already shown in metadata badges
+            if (isDoiUrl) return;
+
             const citationCount = parseInt(access.citation_count) || 0;
 
             let citationClass = '';
@@ -280,24 +286,17 @@ function buildSourceLinks(paper) {
                 ? ` <span class="source-citations ${citationClass}">(${citationCount.toLocaleString()})</span>`
                 : '';
 
-            const isDoiUrl = access.url.includes('doi.org/');
-            const chipClass = isDoiUrl ? 'source-chip-doi' : 'source-chip-page';
-
             let displayLabel = access.label;
-            if (isDoiUrl) {
-                displayLabel = 'DOI';
-            } else {
-                const dbSources = ['crossref', 'semantic scholar', 'pubmed', 'arxiv', 'google scholar', 'europe pmc', 'doaj', 'core'];
-                const labelLower = access.label.toLowerCase();
-                if (dbSources.some(db => labelLower.includes(db))) {
-                    displayLabel = 'Publisher';
-                }
+            const dbSources = ['crossref', 'semantic scholar', 'pubmed', 'arxiv', 'google scholar', 'europe pmc', 'doaj', 'core'];
+            const labelLower = access.label.toLowerCase();
+            if (dbSources.some(db => labelLower.includes(db))) {
+                displayLabel = 'Publisher';
             }
 
             html += `<a href="${access.url}"
                        target="_blank"
-                       class="source-chip ${chipClass}"
-                       title="${isDoiUrl ? 'DOI Resolver' : 'Publisher page'}">
+                       class="source-chip source-chip-page"
+                       title="Publisher page">
                        ${displayLabel}${citationText}
                      </a>`;
         });
@@ -310,8 +309,6 @@ function buildSourceLinks(paper) {
     html += '</div>';
     return html;
 }
-
-// buildLegacyLinks removed - merged into unified buildSourceLinks function
 
 /**
  * Build a paper card HTML
@@ -447,7 +444,9 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
             collectionSelector = `
                 <div class="collection-add-dropdown-wrapper">
                     <button type="button" class="collection-add-dropdown-btn" data-paper-key="${paperKey}">
-                        Add to collection... ▾
+                        <span class="collection-icon">+</span>
+                        <span class="collection-label">Add to collection</span>
+                        <span class="collection-dropdown-arrow">▾</span>
                     </button>
                     <div class="collection-add-dropdown-menu" style="display: none;">
                         ${availableCollections.map(c =>
@@ -456,6 +455,60 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
                     </div>
                 </div>`;
         }
+    }
+
+    // Reading status selector (bookmarks view only)
+    let statusSelector = '';
+    if (options.showCollectionSelector) {
+        const currentStatus = getReadingStatus(paperKey) || 'to_read';
+
+        const statusConfig = {
+            'to_read': { icon: '○', label: 'To Read' },
+            'reading': { icon: '◐', label: 'Reading' },
+            'read': { icon: '●', label: 'Read' },
+            'important': { icon: '★', label: 'Important' }
+        };
+
+        const config = statusConfig[currentStatus];
+
+        statusSelector = `
+            <div class="reading-status-wrapper">
+                <button type="button"
+                        class="reading-status-btn"
+                        data-paper-key="${paperKey}"
+                        data-current-status="${currentStatus}"
+                        title="Change reading status">
+                    <span class="status-icon">${config.icon}</span>
+                    <span class="status-label">${config.label}</span>
+                    <span class="status-dropdown-arrow">▾</span>
+                </button>
+                <div class="reading-status-dropdown" style="display: none;">
+                    <button type="button"
+                            class="status-option"
+                            data-status="to_read"
+                            data-paper-key="${paperKey}">
+                        <span class="status-icon">○</span> To Read
+                    </button>
+                    <button type="button"
+                            class="status-option"
+                            data-status="reading"
+                            data-paper-key="${paperKey}">
+                        <span class="status-icon">◐</span> Reading
+                    </button>
+                    <button type="button"
+                            class="status-option"
+                            data-status="read"
+                            data-paper-key="${paperKey}">
+                        <span class="status-icon">●</span> Read
+                    </button>
+                    <button type="button"
+                            class="status-option"
+                            data-status="important"
+                            data-paper-key="${paperKey}">
+                        <span class="status-icon">★</span> Important
+                    </button>
+                </div>
+            </div>`;
     }
 
     return `
@@ -490,7 +543,7 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
                 </div>
             </div>
             ${collectionBadges}
-            ${collectionSelector}
+            ${(statusSelector || collectionSelector) ? `<div class="paper-actions">${statusSelector}${collectionSelector}</div>` : ''}
             ${metadataBadges ? `<div class="research-metadata-badges">${metadataBadges}</div>` : ''}
             <div class="paper-meta">
                 <span class="paper-authors">${authors}</span>

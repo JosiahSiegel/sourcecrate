@@ -9,7 +9,10 @@ import {
     isBookmarked,
     getBookmarkStats,
     getCollectionPapers,
-    getCollections
+    getCollections,
+    getBookmarksByStatus,
+    getReadingStats,
+    getReadingStatsForCollection
 } from './bookmarks.js';
 import {
     getRecentSearches
@@ -82,8 +85,9 @@ export function hideSearchHistory() {
  * Show bookmarks view
  * @param {string} currentCollection - Current collection ID
  * @param {string} currentSortOrder - Current sort order
+ * @param {string} statusFilter - Status filter ('all', 'to_read', 'reading', 'read', 'important')
  */
-export function showBookmarksView(currentCollection, currentSortOrder) {
+export function showBookmarksView(currentCollection, currentSortOrder, statusFilter = 'all') {
     // Hide search section and results
     document.querySelector('.search-section').style.display = 'none';
     document.querySelector('.results-section').classList.remove('active');
@@ -91,12 +95,15 @@ export function showBookmarksView(currentCollection, currentSortOrder) {
     // Show bookmarks section
     document.getElementById('bookmarksSection').style.display = 'block';
 
+    // Update reading stats dashboard for current collection
+    updateReadingStats(currentCollection);
+
     // Render collections inline
     renderCollectionsInline(currentCollection);
 
     // Render bookmarks for current collection
     const searchQuery = document.getElementById('bookmarksSearchInput').value;
-    renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder);
+    renderBookmarksForCollection(currentCollection, searchQuery, currentSortOrder, statusFilter);
 }
 
 /**
@@ -153,6 +160,34 @@ export function updateBookmarkCount() {
     document.getElementById('bookmarkCount').textContent = stats.totalBookmarks;
 }
 
+/**
+ * Update reading progress stats dashboard
+ * @param {string} collectionId - Collection ID (defaults to 'all')
+ */
+export function updateReadingStats(collectionId = 'all') {
+    const stats = getReadingStatsForCollection(collectionId);
+    const collections = getCollections();
+    const collectionName = collections[collectionId]?.name || 'All Papers';
+
+    // Update collection name in progress label (if element exists)
+    const nameEl = document.getElementById('progressCollectionName');
+    if (nameEl) {
+        nameEl.textContent = collectionName;
+    }
+
+    // Update percentage in progress label (if element exists)
+    const percentEl = document.getElementById('progressPercentText');
+    if (percentEl) {
+        percentEl.textContent = `Read ${stats.completion_percent}%`;
+    }
+
+    // Update progress bar fill
+    const progressBarFill = document.getElementById('progressBarFill');
+    if (progressBarFill) {
+        progressBarFill.style.width = `${stats.completion_percent}%`;
+    }
+}
+
 // ============================================================================
 // Bookmarks Rendering
 // ============================================================================
@@ -207,14 +242,23 @@ export function renderBookmarks(searchQuery = '', sortOrder = 'date-desc') {
  * @param {string} collectionId - Collection ID
  * @param {string} searchQuery - Search query
  * @param {string} sortOrder - Sort order
+ * @param {string} statusFilter - Status filter ('all', 'to_read', 'reading', 'read', 'important')
  */
-export function renderBookmarksForCollection(collectionId, searchQuery = '', sortOrder = 'date-desc') {
+export function renderBookmarksForCollection(collectionId, searchQuery = '', sortOrder = 'date-desc', statusFilter = 'all') {
     let bookmarkedPapers = getCollectionPapers(collectionId);
     const bookmarksResults = document.getElementById('bookmarksResults');
 
     if (bookmarkedPapers.length === 0) {
         bookmarksResults.innerHTML = '<p class="placeholder">No papers in this collection yet.</p>';
         return;
+    }
+
+    // Apply status filter
+    if (statusFilter && statusFilter !== 'all') {
+        bookmarkedPapers = bookmarkedPapers.filter(paper => {
+            const paperStatus = paper._reading_status || 'to_read';
+            return paperStatus === statusFilter;
+        });
     }
 
     // Apply search filter
@@ -225,7 +269,7 @@ export function renderBookmarksForCollection(collectionId, searchQuery = '', sor
 
     // Show "no results" if filtered out everything
     if (bookmarkedPapers.length === 0) {
-        bookmarksResults.innerHTML = '<p class="placeholder">No papers match your search query.</p>';
+        bookmarksResults.innerHTML = '<p class="placeholder">No papers match your filters.</p>';
         return;
     }
 

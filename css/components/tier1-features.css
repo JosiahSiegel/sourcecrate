@@ -2,37 +2,6 @@
    TIER 1 FEATURES - Export, Bookmarks, Search History
    ============================================================================ */
 
-/* Export Toolbar */
-.export-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: var(--surface-color);
-    border: 2px solid var(--border-color);
-}
-
-.export-toolbar .btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-}
-
-@media (max-width: 768px) {
-    .export-toolbar {
-        flex-direction: column;
-    }
-
-    .export-toolbar .btn {
-        width: 100%;
-    }
-
-    /* Mobile spacing optimization for title layout */
-    .paper-title-actions {
-        gap: 0.5rem; /* Reduced from 1rem to maximize title space */
-    }
-}
-
 /* Bookmark Button on Paper Cards */
 .paper-title-actions {
     display: flex;
@@ -353,8 +322,10 @@
     top: 100%;
     right: 0;
     margin-top: 0.25rem;
-    background: var(--card-bg);
+    background: var(--surface-color);
     border: 1px solid var(--border-color);
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     min-width: 120px;
     z-index: 100;
 }
@@ -362,20 +333,97 @@
 .sort-dropdown-menu button {
     display: block;
     width: 100%;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
     background: transparent;
     border: none;
     color: var(--text-secondary);
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 500;
     text-align: left;
+    cursor: pointer;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 44px;
+}
+
+.sort-dropdown-menu button:hover {
+    background: rgba(192, 163, 146, 0.08);
+    color: var(--accent-color);
+    transform: translateX(2px);
+}
+
+/* Status Filter Dropdown */
+.status-filter-dropdown-wrapper {
+    position: relative;
+}
+
+.status-filter-dropdown-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
-.sort-dropdown-menu button:hover {
-    background: rgba(192, 163, 146, 0.1);
+.status-filter-dropdown-btn:hover {
+    border-color: var(--accent-color);
     color: var(--accent-color);
+}
+
+.status-filter-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.25rem;
+    background: #2d2420;
+    border: 1px solid var(--border-color);
+    border-radius: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    min-width: 140px;
+    z-index: 9999;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+}
+
+.status-filter-dropdown-menu button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: #2d2420;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 44px;
+}
+
+.status-filter-dropdown-menu button:hover {
+    background: rgba(192, 163, 146, 0.08);
+    color: var(--accent-color);
+    transform: translateX(2px);
+}
+
+.status-filter-dropdown-menu button .status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    font-size: 1.125rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* Star icon visual weight compensation */
+.status-filter-dropdown-menu button[data-status="important"] .status-icon {
+    font-size: 0.95rem;
 }
 
 /* Export Dropdown */
@@ -404,8 +452,10 @@
     top: 100%;
     right: 0;
     margin-top: 0.25rem;
-    background: var(--card-bg);
+    background: var(--surface-color);
     border: 1px solid var(--border-color);
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     min-width: 120px;
     z-index: 100;
 }
@@ -413,20 +463,22 @@
 .export-dropdown-menu button {
     display: block;
     width: 100%;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
     background: transparent;
     border: none;
     color: var(--text-secondary);
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 500;
     text-align: left;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 44px;
 }
 
 .export-dropdown-menu button:hover {
-    background: rgba(192, 163, 146, 0.1);
+    background: rgba(192, 163, 146, 0.08);
     color: var(--accent-color);
+    transform: translateX(2px);
 }
 
 .export-dropdown-separator {
@@ -590,25 +642,9 @@
 }
 
 /* Collection Add Dropdown (Paper Cards) */
+/* Note: Base button styles are shared with .reading-status-btn in papers.css */
 .collection-add-dropdown-wrapper {
     position: relative;
-    margin: 0.5rem 0 0 0;
-}
-
-.collection-add-dropdown-btn {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    padding: 0.375rem 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.collection-add-dropdown-btn:hover {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
 }
 
 .collection-add-dropdown-menu {
@@ -616,8 +652,10 @@
     top: 100%;
     left: 0;
     margin-top: 0.25rem;
-    background: var(--card-bg);
+    background: var(--surface-color);
     border: 1px solid var(--border-color);
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     min-width: 180px;
     z-index: 100;
 }
@@ -625,20 +663,22 @@
 .collection-add-dropdown-menu button {
     display: block;
     width: 100%;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
     background: transparent;
     border: none;
     color: var(--text-secondary);
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 500;
     text-align: left;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 44px;
 }
 
 .collection-add-dropdown-menu button:hover {
-    background: rgba(192, 163, 146, 0.1);
+    background: rgba(192, 163, 146, 0.08);
     color: var(--accent-color);
+    transform: translateX(2px);
 }
 
 /* Collection Badges (Show collections paper is in) */
@@ -651,29 +691,33 @@
 }
 
 .collection-badges-label {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 600;
+    text-transform: lowercase;
+    letter-spacing: normal;
+    font-weight: 500;
+    opacity: 0.7;
 }
 
 .collection-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.5rem;
-    background: var(--surface-color);
-    border: 1px solid var(--border-color);
-    font-size: 0.75rem;
-    font-weight: 600;
+    gap: 0.3rem;
+    padding: 0.25rem 0.75rem;
+    background: rgba(192, 163, 146, 0.08);
+    border: none;
+    border-radius: 12px;
+    font-size: 0.6875rem;
+    font-weight: 500;
     color: var(--text-secondary);
-    transition: all 0.15s ease;
+    opacity: 0.85;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .collection-badge:hover {
-    border-color: var(--accent-color);
-    color: var(--text-color);
+    background: rgba(192, 163, 146, 0.15);
+    opacity: 1;
+    transform: translateY(-1px);
 }
 
 .collection-badge-remove {
@@ -700,3 +744,49 @@
 .collection-badge-remove:active {
     transform: scale(0.9);
 }
+
+/* ============================================================================
+   READING PROGRESS (2025 MINIMALISTIC DESIGN)
+   ============================================================================ */
+
+/* Minimalistic Progress Bar - Always Visible */
+.reading-progress-minimal {
+    margin-bottom: 1.5rem;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.progress-label #progressCollectionName {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+.progress-label #progressPercentText {
+    font-weight: 500;
+    opacity: 0.8;
+    font-variant-numeric: tabular-nums;
+}
+
+.reading-progress-bar-minimal {
+    width: 100%;
+    height: 6px;
+    background: rgba(192, 163, 146, 0.12);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar-fill-minimal {
+    height: 100%;
+    background: var(--accent-color);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 3px;
+}
+

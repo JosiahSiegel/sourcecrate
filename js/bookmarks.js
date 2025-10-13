@@ -104,10 +104,11 @@ export function addBookmark(paper, collectionId = 'all') {
     const key = getPaperKey(paper);
     const bookmarks = getBookmarks();
 
-    // Store paper with timestamp
+    // Store paper with timestamp and default reading status
     bookmarks[key] = {
         ...paper,
-        _bookmarked_at: Date.now()
+        _bookmarked_at: Date.now(),
+        _reading_status: 'to_read' // Default: to_read, reading, read, important
     };
 
     saveBookmarks(bookmarks);
@@ -375,4 +376,123 @@ export function clearAllBookmarks() {
         }
     }
     return false;
+}
+
+// ============================================================================
+// READING STATUS MANAGEMENT
+// ============================================================================
+
+/**
+ * Get reading status for a paper
+ * @param {string} paperKey - Paper key
+ * @returns {string|null} Status or null if not bookmarked
+ */
+export function getReadingStatus(paperKey) {
+    const bookmarks = getBookmarks();
+    const paper = bookmarks[paperKey];
+
+    if (!paper) {
+        return null;
+    }
+
+    // Default to 'to_read' if not set (for existing bookmarks)
+    return paper._reading_status || 'to_read';
+}
+
+/**
+ * Set reading status for a paper
+ * @param {string} paperKey - Paper key
+ * @param {string} status - Status ('to_read', 'reading', 'read', 'important')
+ * @returns {boolean} Success status
+ */
+export function setReadingStatus(paperKey, status) {
+    const validStatuses = ['to_read', 'reading', 'read', 'important'];
+
+    if (!validStatuses.includes(status)) {
+        console.warn(`Invalid status: ${status}`);
+        return false;
+    }
+
+    const bookmarks = getBookmarks();
+    const paper = bookmarks[paperKey];
+
+    if (!paper) {
+        console.warn(`Paper ${paperKey} not found in bookmarks`);
+        return false;
+    }
+
+    // Update status
+    paper._reading_status = status;
+
+    // Add read timestamp if marking as read
+    if (status === 'read') {
+        paper._read_at = Date.now();
+    }
+
+    saveBookmarks(bookmarks);
+    return true;
+}
+
+/**
+ * Get bookmarks filtered by reading status
+ * @param {string} status - Status to filter by ('to_read', 'reading', 'read', 'important', or 'all')
+ * @returns {Array} Array of paper objects
+ */
+export function getBookmarksByStatus(status = 'all') {
+    const bookmarks = getBookmarks();
+    const papers = Object.values(bookmarks);
+
+    if (status === 'all') {
+        return papers.sort((a, b) => (b._bookmarked_at || 0) - (a._bookmarked_at || 0));
+    }
+
+    const filtered = papers.filter(paper => {
+        const paperStatus = paper._reading_status || 'to_read';
+        return paperStatus === status;
+    });
+
+    // Sort by bookmark timestamp (newest first)
+    return filtered.sort((a, b) => (b._bookmarked_at || 0) - (a._bookmarked_at || 0));
+}
+
+/**
+ * Get reading statistics for a specific collection
+ * @param {string} collectionId - Collection ID (defaults to 'all')
+ * @returns {Object} Statistics object with counts and percentages
+ */
+export function getReadingStatsForCollection(collectionId = 'all') {
+    // Get papers for the specific collection
+    const papers = collectionId === 'all'
+        ? Object.values(getBookmarks())
+        : getCollectionPapers(collectionId);
+
+    const stats = {
+        total: papers.length,
+        to_read: 0,
+        reading: 0,
+        read: 0,
+        important: 0
+    };
+
+    papers.forEach(paper => {
+        const status = paper._reading_status || 'to_read';
+        if (stats.hasOwnProperty(status)) {
+            stats[status]++;
+        }
+    });
+
+    // Calculate completion percentage
+    stats.completion_percent = stats.total > 0
+        ? Math.round((stats.read / stats.total) * 100)
+        : 0;
+
+    return stats;
+}
+
+/**
+ * Get reading statistics (all bookmarks)
+ * @returns {Object} Statistics object with counts and percentages
+ */
+export function getReadingStats() {
+    return getReadingStatsForCollection('all');
 }
