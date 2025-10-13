@@ -217,9 +217,162 @@ export function downloadFile(content, filename, mimeType) {
 }
 
 /**
+ * Export papers to plain text format suitable for email
+ * @param {Array} papers - Array of paper objects
+ * @returns {string} Plain text formatted string
+ */
+export function exportToPlainText(papers) {
+    const entries = papers.map((paper, index) => {
+        let text = `${index + 1}. ${paper.title || 'Untitled'}\n`;
+
+        if (paper.authors && paper.authors.length > 0) {
+            text += `   Authors: ${paper.authors.join(', ')}\n`;
+        }
+
+        if (paper.year) {
+            text += `   Year: ${paper.year}\n`;
+        }
+
+        if (paper.journal) {
+            text += `   Journal: ${paper.journal}\n`;
+        }
+
+        if (paper.doi) {
+            text += `   DOI: ${normalizeDoi(paper.doi)}\n`;
+        }
+
+        if (paper.url) {
+            text += `   URL: ${paper.url}\n`;
+        }
+
+        if (paper.pdf_url) {
+            text += `   PDF: ${paper.pdf_url}\n`;
+        }
+
+        return text;
+    });
+
+    return entries.join('\n');
+}
+
+/**
+ * Copy papers to clipboard as formatted text
+ * @param {Array} papers - Array of paper objects
+ */
+export async function copyPapers(papers) {
+    if (!papers || papers.length === 0) {
+        alert('No papers to copy');
+        return;
+    }
+
+    // Format content
+    const content = `Papers from SourceCrate (${papers.length} paper${papers.length > 1 ? 's' : ''})\n\n${exportToPlainText(papers)}\n\n---\nSourced from: ${window.location.origin}`;
+
+    // Try clipboard API first
+    try {
+        await navigator.clipboard.writeText(content);
+        alert(`✓ ${papers.length} paper${papers.length > 1 ? 's' : ''} copied to clipboard!\n\nYou can now paste into your email, document, or notes.`);
+    } catch (err) {
+        console.error('Clipboard API failed:', err);
+        // Fallback to modal with textarea
+        showCopyModal(content);
+    }
+}
+
+/**
+ * Show modal with copyable text (fallback when clipboard API fails)
+ * @param {string} content - Content to copy
+ */
+function showCopyModal(content) {
+    // Try clipboard API first
+    navigator.clipboard.writeText(content)
+        .then(() => {
+            alert('✓ Citations copied to clipboard!\n\nYou can now paste them into your email.');
+        })
+        .catch(() => {
+            // If clipboard fails, show modal with text area
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+
+            const container = document.createElement('div');
+            container.style.cssText = `
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+                max-width: 600px;
+                width: 90%;
+                max-height: 80vh;
+                overflow: auto;
+            `;
+
+            const title = document.createElement('h3');
+            title.textContent = 'Copy Citations to Email';
+            title.style.marginTop = '0';
+
+            const instructions = document.createElement('p');
+            instructions.textContent = 'Select all the text below (Ctrl+A) and copy it (Ctrl+C):';
+
+            const textarea = document.createElement('textarea');
+            textarea.value = content;
+            textarea.style.cssText = `
+                width: 100%;
+                height: 300px;
+                font-family: monospace;
+                font-size: 12px;
+                padding: 0.5rem;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            `;
+            textarea.readOnly = true;
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = 'Close';
+            closeBtn.style.cssText = `
+                margin-top: 1rem;
+                padding: 0.5rem 1rem;
+                background: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            `;
+            closeBtn.onclick = () => document.body.removeChild(modal);
+
+            container.appendChild(title);
+            container.appendChild(instructions);
+            container.appendChild(textarea);
+            container.appendChild(closeBtn);
+            modal.appendChild(container);
+            document.body.appendChild(modal);
+
+            // Auto-select text
+            textarea.select();
+            textarea.focus();
+
+            // Close on background click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            };
+        });
+}
+
+/**
  * Export papers in specified format
  * @param {Array} papers - Array of paper objects
- * @param {string} format - Export format ('bibtex', 'ris', 'csv', 'json')
+ * @param {string} format - Export format ('plaintext', 'bibtex', 'ris', 'csv', 'json')
  */
 export function exportPapers(papers, format) {
     if (!papers || papers.length === 0) {
@@ -231,6 +384,12 @@ export function exportPapers(papers, format) {
     let content, filename, mimeType;
 
     switch (format.toLowerCase()) {
+        case 'plaintext':
+            content = exportToPlainText(papers);
+            filename = `sourcecrate_export_${timestamp}.txt`;
+            mimeType = 'text/plain';
+            break;
+
         case 'bibtex':
             content = exportToBibTeX(papers);
             filename = `sourcecrate_export_${timestamp}.bib`;

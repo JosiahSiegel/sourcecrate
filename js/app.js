@@ -509,6 +509,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Results copy handler
+    document.getElementById('copyResultsBtn').addEventListener('click', async () => {
+        const { copyPapers } = await import('./export.js');
+        const { getFilteredAndSortedResults } = await import('./rendering.js');
+
+        // Copy only the filtered and sorted results that are currently displayed
+        const papers = getFilteredAndSortedResults(currentSearchFilterQuery, currentSearchSortOrder);
+        await copyPapers(papers);
+        document.getElementById('resultsExportDropdownMenu').style.display = 'none';
+    });
+
     // View bookmarks button
     document.getElementById('viewBookmarksBtn').addEventListener('click', () => {
         currentView = 'bookmarks';
@@ -558,6 +569,27 @@ document.addEventListener('DOMContentLoaded', () => {
             exportPapers(papers, format);
             document.getElementById('exportDropdownMenu').style.display = 'none';
         });
+    });
+
+    // Bookmarks copy handler
+    document.getElementById('copyBookmarksBtn').addEventListener('click', async () => {
+        const { copyPapers } = await import('./export.js');
+
+        // Get collection papers
+        let papers = getCollectionPapers(currentCollection);
+
+        // Apply current filter from search input
+        const searchQuery = document.getElementById('bookmarksSearchInput').value;
+        if (searchQuery) {
+            papers = filterBookmarksByQuery(papers, searchQuery);
+        }
+
+        // Apply current sort order
+        papers = sortBookmarks(papers, currentSortOrder);
+
+        // Copy the filtered and sorted results
+        await copyPapers(papers);
+        document.getElementById('exportDropdownMenu').style.display = 'none';
     });
 
     // Clear all bookmarks
