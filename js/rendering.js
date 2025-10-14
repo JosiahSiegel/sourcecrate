@@ -258,6 +258,11 @@ function buildSourceLinks(paper) {
             return countB - countA;
         });
 
+        // Check if there are non-DOI sources available
+        const hasNonDoiSources = sortedPages.some(access =>
+            access.url && !access.url.includes('doi.org/')
+        );
+
         html += `<div class="all-sources-chips">
             <span class="sources-label">Sources:</span>`;
 
@@ -266,8 +271,8 @@ function buildSourceLinks(paper) {
 
             const isDoiUrl = access.url.includes('doi.org/');
 
-            // Skip DOI URLs - already shown in metadata badges
-            if (isDoiUrl) return;
+            // Skip DOI URLs only if there are other non-DOI sources
+            if (isDoiUrl && hasNonDoiSources) return;
 
             const citationCount = parseInt(access.citation_count) || 0;
 
