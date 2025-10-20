@@ -123,72 +123,75 @@
 
             <!-- Bookmarks Section -->
             <section id="bookmarksSection" class="bookmarks-section" style="display: none;">
-                <!-- Minimal Header -->
-                <div class="bookmarks-header-minimal">
-                    <h2>SAVED PAPERS</h2>
-                    <a href="#" id="backToSearchLink" class="back-link">← Back</a>
-                </div>
+                <!-- Sticky Header Container -->
+                <div class="bookmarks-sticky-header">
+                    <!-- Minimal Header -->
+                    <div class="bookmarks-header-minimal">
+                        <h2>SAVED PAPERS</h2>
+                        <a href="#" id="backToSearchLink" class="back-link">← Back</a>
+                    </div>
 
-                <!-- Minimalistic Progress Bar (Always Visible) -->
-                <div class="reading-progress-minimal">
-                    <div class="progress-label">
-                        <span id="progressCollectionName">All Papers</span>
-                        <span id="progressPercentText">0%</span>
+                    <!-- Minimalistic Progress Bar (Always Visible) -->
+                    <div class="reading-progress-minimal">
+                        <div class="progress-label">
+                            <span id="progressCollectionName">All Papers</span>
+                            <span id="progressPercentText">0%</span>
+                        </div>
+                        <div class="reading-progress-bar-minimal">
+                            <div class="progress-bar-fill-minimal" id="progressBarFill" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="reading-progress-bar-minimal">
-                        <div class="progress-bar-fill-minimal" id="progressBarFill" style="width: 0%"></div>
-                    </div>
-                </div>
 
-                <!-- Collections and Controls (Single Row) -->
-                <div class="bookmarks-controls-row">
-                    <div class="collections-inline">
-                        <span id="collectionsInline">
-                            <!-- Collections will be rendered as plain text -->
-                        </span>
-                        <a href="#" id="newCollectionLink" class="new-collection-link">+ New</a>
-                    </div>
-                    <div class="controls-inline">
-                        <input
-                            type="text"
-                            id="bookmarksSearchInput"
-                            class="search-minimal"
-                            placeholder="Search..."
-                            autocomplete="off"
-                        >
-                        <div class="status-filter-dropdown-wrapper">
-                            <button type="button" id="statusFilterDropdownBtn" class="status-filter-dropdown-btn">Status: All ▾</button>
-                            <div id="statusFilterDropdownMenu" class="status-filter-dropdown-menu" style="display: none;">
-                                <button type="button" data-status="all">All</button>
-                                <button type="button" data-status="to_read"><span class="status-icon">○</span> To Read</button>
-                                <button type="button" data-status="reading"><span class="status-icon">◐</span> Reading</button>
-                                <button type="button" data-status="read"><span class="status-icon">●</span> Read</button>
-                                <button type="button" data-status="important"><span class="status-icon">★</span> Important</button>
-                            </div>
+                    <!-- Collections and Controls (Single Row) -->
+                    <div class="bookmarks-controls-row">
+                        <div class="collections-inline">
+                            <span id="collectionsInline">
+                                <!-- Collections will be rendered as plain text -->
+                            </span>
+                            <a href="#" id="newCollectionLink" class="new-collection-link">+ New</a>
                         </div>
-                        <div class="sort-dropdown-wrapper">
-                            <button type="button" id="sortDropdownBtn" class="sort-dropdown-btn">Sort ▾</button>
-                            <div id="sortDropdownMenu" class="sort-dropdown-menu" style="display: none;">
-                                <button type="button" data-sort="date-desc">Newest</button>
-                                <button type="button" data-sort="date-asc">Oldest</button>
-                                <button type="button" data-sort="title-asc">A-Z</button>
-                                <button type="button" data-sort="title-desc">Z-A</button>
-                                <button type="button" data-sort="year-desc">Year ↓</button>
-                                <button type="button" data-sort="year-asc">Year ↑</button>
+                        <div class="controls-inline">
+                            <input
+                                type="text"
+                                id="bookmarksSearchInput"
+                                class="search-minimal"
+                                placeholder="Search..."
+                                autocomplete="off"
+                            >
+                            <div class="status-filter-dropdown-wrapper">
+                                <button type="button" id="statusFilterDropdownBtn" class="status-filter-dropdown-btn">Status: All ▾</button>
+                                <div id="statusFilterDropdownMenu" class="status-filter-dropdown-menu" style="display: none;">
+                                    <button type="button" data-status="all">All</button>
+                                    <button type="button" data-status="to_read"><span class="status-icon">○</span> To Read</button>
+                                    <button type="button" data-status="reading"><span class="status-icon">◐</span> Reading</button>
+                                    <button type="button" data-status="read"><span class="status-icon">●</span> Read</button>
+                                    <button type="button" data-status="important"><span class="status-icon">★</span> Important</button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="export-dropdown-wrapper">
-                            <button type="button" id="exportDropdownBtn" class="export-dropdown-btn">Export ▾</button>
-                            <div id="exportDropdownMenu" class="export-dropdown-menu" style="display: none;">
-                                <button type="button" id="copyBookmarksBtn">⧉ Copy</button>
-                                <div class="export-dropdown-separator"></div>
-                                <button type="button" data-format="plaintext">Plain Text</button>
-                                <button type="button" data-format="bibtex">BibTeX</button>
-                                <button type="button" data-format="ris">RIS</button>
-                                <button type="button" data-format="csv">CSV</button>
-                                <button type="button" data-format="json">JSON</button>
-                                <div class="export-dropdown-separator"></div>
-                                <button type="button" id="clearAllBookmarksBtn">Clear All</button>
+                            <div class="sort-dropdown-wrapper">
+                                <button type="button" id="sortDropdownBtn" class="sort-dropdown-btn">Sort ▾</button>
+                                <div id="sortDropdownMenu" class="sort-dropdown-menu" style="display: none;">
+                                    <button type="button" data-sort="date-desc">Newest</button>
+                                    <button type="button" data-sort="date-asc">Oldest</button>
+                                    <button type="button" data-sort="title-asc">A-Z</button>
+                                    <button type="button" data-sort="title-desc">Z-A</button>
+                                    <button type="button" data-sort="year-desc">Year ↓</button>
+                                    <button type="button" data-sort="year-asc">Year ↑</button>
+                                </div>
+                            </div>
+                            <div class="export-dropdown-wrapper">
+                                <button type="button" id="exportDropdownBtn" class="export-dropdown-btn">Export ▾</button>
+                                <div id="exportDropdownMenu" class="export-dropdown-menu" style="display: none;">
+                                    <button type="button" id="copyBookmarksBtn">⧉ Copy</button>
+                                    <div class="export-dropdown-separator"></div>
+                                    <button type="button" data-format="plaintext">Plain Text</button>
+                                    <button type="button" data-format="bibtex">BibTeX</button>
+                                    <button type="button" data-format="ris">RIS</button>
+                                    <button type="button" data-format="csv">CSV</button>
+                                    <button type="button" data-format="json">JSON</button>
+                                    <div class="export-dropdown-separator"></div>
+                                    <button type="button" id="clearAllBookmarksBtn">Clear All</button>
+                                </div>
                             </div>
                         </div>
                     </div>
