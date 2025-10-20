@@ -31,6 +31,7 @@ Thumbs.db
 *claude*
 *.png
 devdocs
+relevance-tuning
 
 # Build (future-proofing)
 dist/

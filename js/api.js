@@ -216,6 +216,22 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
                     } else {
                         // Add new paper
                         const key = paperProcessor.getPaperKey(paper);
+
+                        // FIXED: Create _source_links for single-source papers too
+                        // This ensures consistent rendering and filtering behavior
+                        if (!paper._source_links) {
+                            const pdfUrl = paper.pdf_url || paper.open_access_pdf;
+                            paper._source_links = [{
+                                source: paper.source,
+                                pdf_url: pdfUrl || null,
+                                url: paper.url || null,
+                                // CRITICAL: has_pdf should ONLY be true if pdf_url is valid AND not null
+                                has_pdf: !!(pdfUrl && paperProcessor.isValidPdfUrl(pdfUrl)),
+                                is_open_access: paper.is_open_access || false,
+                                citation_count: parseInt(paper.citation_count) || 0
+                            }];
+                        }
+
                         papersByKey.set(key, paper);
                         newPapers.push(paper);
 

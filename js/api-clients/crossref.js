@@ -62,14 +62,24 @@ export class CrossRefClient extends BaseAPIClient {
                     `${a.given || ''} ${a.family || ''}`.trim()
                 ) || [];
 
-                // Find PDF link
+                // IMPORTANT: CrossRef's "link" field does NOT provide direct PDF downloads.
+                // These URLs are publisher-provided landing pages that often require:
+                // - Authentication/login
+                // - Subscription/paywall access
+                // - Content negotiation
+                // The content-type='application/pdf' indicates the TYPE of content available,
+                // not that the URL is a direct download. CrossRef is a metadata aggregator,
+                // not a content host. Publishers control access through their own systems.
+                //
+                // We do NOT set pdf_url from CrossRef links because:
+                // 1. They're not direct downloads (will frustrate users)
+                // 2. They often lead to 404s or paywalls
+                // 3. Better sources (Unpaywall, arXiv, Europe PMC) provide actual PDFs
+                //
+                // The item.URL field (landing page) is still valuable and will appear
+                // as a "Publisher" source chip for accessing the paper through proper channels.
                 let pdfUrl = null;
-                if (item.link) {
-                    const pdfLink = item.link.find(l =>
-                        l['content-type'] === 'application/pdf'
-                    );
-                    pdfUrl = pdfLink?.URL;
-                }
+                // Intentionally NOT extracting PDF URLs from CrossRef link field
 
                 return {
                     title: item.title?.[0],
