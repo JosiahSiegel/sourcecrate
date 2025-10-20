@@ -244,7 +244,7 @@ export class BM25Scorer {
      * Higher IDF = rarer term = more important
      * Uses Robertson-Zaragoza formula (BM25 standard)
      * @param {string} term - Term to calculate IDF for
-     * @returns {number} IDF value (can be negative for very common terms)
+     * @returns {number} IDF value (minimum 0.1 to prevent negative scores)
      */
     calculateIDF(term) {
         if (this.totalDocs === 0) return 0;
@@ -256,7 +256,12 @@ export class BM25Scorer {
         // Handles edge cases better than simplified formula
         // More accurate for rare terms (df=1) and common terms (df≈N)
         const N = this.totalDocs;
-        return Math.log((N - df + 0.5) / (df + 0.5));
+        const rawIDF = Math.log((N - df + 0.5) / (df + 0.5));
+
+        // FIX #1: Clamp IDF to minimum of 0.1 to prevent negative scores
+        // Negative IDF occurs when df > N/2 (very common terms)
+        // Instead of penalizing common terms with negative scores, we give them low positive weight
+        return Math.max(0.1, rawIDF);
     }
 
     /**
@@ -278,6 +283,14 @@ export class BM25Scorer {
         const paperTokens = tokenize(paperText);
         const docLength = paperTokens.length;
 
+        // FIX #3: Detect proper nouns in query for term weighting
+        // Proper nouns (capitalized words) are typically more specific and important
+        const queryWords = query.split(/\s+/);
+        const properNouns = new Set(
+            queryWords.filter(word => word.length > 2 && /^[A-Z]/.test(word))
+                .map(word => enhancedStem(word.toLowerCase()))
+        );
+
         let score = 0;
         let matchedTerms = 0;
 
@@ -295,15 +308,20 @@ export class BM25Scorer {
             // IDF component - penalizes common terms
             const idf = this.calculateIDF(term);
 
-            // BM25 score = TF * IDF
-            score += tfComponent * idf;
+            // FIX #3: Apply query term weighting
+            // Proper nouns (e.g., "Titanic", "Einstein") weighted 2.0x higher than common words
+            const termWeight = properNouns.has(term) ? 2.0 : 1.0;
+
+            // BM25 score = TF * IDF * term weight
+            score += tfComponent * idf * termWeight;
         }
 
         // Normalize to 0-100 range with FIXED scale for consistent scoring during streaming
         // Use fixed maxIDF assuming ~200 doc corpus (log(200/0.5) ≈ 6.0 for Robertson-Zaragoza)
         // This ensures early papers (N=20) and late papers (N=100) have comparable scores
         const maxIDF = Math.log((200 - 0.5) / 0.5); // ~6.0 for Robertson-Zaragoza
-        const theoreticalMax = queryTerms.length * (this.k1 + 1) * maxIDF;
+        const maxTermWeight = 2.0; // Account for proper noun weighting
+        const theoreticalMax = queryTerms.length * (this.k1 + 1) * maxIDF * maxTermWeight;
 
         // Normalize base BM25 score
         // Clamp to 0-100 range (negative scores indicate poor matches)
@@ -314,19 +332,47 @@ export class BM25Scorer {
         // Apply boosts AFTER normalization (additive, not multiplicative)
         // This prevents negative score issues and provides consistent boost behavior
 
-        // Phrase matching boost: +40 points if exact phrase found in paper
-        // Detect phrases in quotes (e.g., "machine learning")
-        const phrases = query.match(/"([^"]+)"/gi);
-        if (phrases && phrases.length > 0) {
+        // FIX #2: Automatic phrase detection (multi-word entities)
+        // Detect consecutive capitalized words (e.g., "RMS Titanic", "Albert Einstein")
+        const autoPhrase = this.detectPhrases(query);
+
+        // FIX #2 & #4: Enhanced phrase matching with location-aware boosting
+        // Detect explicit phrases in quotes (e.g., "machine learning")
+        const explicitPhrases = query.match(/"([^"]+)"/gi);
+        const allPhrases = explicitPhrases ?
+            explicitPhrases.map(p => p.replace(/"/g, '').toLowerCase().trim()) : [];
+
+        // Add automatically detected phrases (proper noun sequences)
+        if (autoPhrase) {
+            allPhrases.push(autoPhrase.toLowerCase());
+        }
+
+        if (allPhrases.length > 0) {
             const paperTextLower = paperText.toLowerCase();
+            const titleLower = (paper.title || '').toLowerCase();
+            const abstractLower = (paper.abstract || '').toLowerCase();
 
-            for (const phrase of phrases) {
-                // Remove quotes and clean
-                const cleanPhrase = phrase.replace(/"/g, '').toLowerCase().trim();
+            for (const phrase of allPhrases) {
+                if (!phrase) continue;
 
-                // Check if exact phrase appears in paper text
-                if (cleanPhrase && paperTextLower.includes(cleanPhrase)) {
-                    normalizedScore = Math.min(100, normalizedScore + 40); // +40 points (additive boost)
+                // FIX #2 & #4: Location-aware phrase boosting
+                // Title matches are much more important than abstract matches
+                if (titleLower.includes(phrase)) {
+                    // FIX #4: Check for complete query match in title
+                    const queryLower = query.toLowerCase().replace(/"/g, '');
+                    const isCompleteMatch = titleLower.includes(queryLower);
+
+                    if (isCompleteMatch) {
+                        // Complete query in title: +80 points (extremely relevant)
+                        normalizedScore = Math.min(100, normalizedScore + 80);
+                    } else {
+                        // Partial phrase in title: +60 points (very relevant)
+                        normalizedScore = Math.min(100, normalizedScore + 60);
+                    }
+                    break; // Only apply once per paper
+                } else if (abstractLower.includes(phrase)) {
+                    // Phrase in abstract: +40 points (relevant)
+                    normalizedScore = Math.min(100, normalizedScore + 40);
                     break; // Only apply once per paper
                 }
             }
@@ -351,8 +397,34 @@ export class BM25Scorer {
     }
 
     /**
+     * FIX #2: Detect implicit phrases in query (consecutive capitalized words)
+     * Examples: "RMS Titanic", "Albert Einstein", "HMS Beagle"
+     * @param {string} query - Search query
+     * @returns {string|null} Detected phrase or null
+     */
+    detectPhrases(query) {
+        // Pattern 1: Ship prefixes (RMS/HMS/USS) + capitalized name
+        const shipPattern = /\b(RMS|HMS|USS)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/;
+        const shipMatch = query.match(shipPattern);
+        if (shipMatch) {
+            return shipMatch[0]; // Return full match (e.g., "RMS Titanic")
+        }
+
+        // Pattern 2: Consecutive capitalized words (2+ words)
+        // Matches: "Albert Einstein", "Marie Curie", "New York"
+        const capsPattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/;
+        const capsMatch = query.match(capsPattern);
+        if (capsMatch) {
+            return capsMatch[0];
+        }
+
+        return null;
+    }
+
+    /**
      * Get paper text with field weighting
      * Title is repeated 3x to boost its importance
+     * Note: Title weight is static here; dynamic boosting is applied via phrase detection in score()
      * @param {Object} paper - Paper object
      * @returns {string} Weighted paper text
      */
@@ -360,6 +432,8 @@ export class BM25Scorer {
         const parts = [];
 
         // Title: 3x weight (most important field)
+        // FIX #4 note: Exact query matches get additional boost via phrase detection
+        // rather than increasing repetition here (keeps corpus stats stable)
         const title = paper.title || '';
         for (let i = 0; i < 3; i++) {
             parts.push(title);
