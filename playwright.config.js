@@ -55,6 +55,7 @@ export default defineConfig({
 
     // Video retention strategy
     video: 'retain-on-failure',
+    serviceWorkers: 'block',
 
     // Maximum time for each action (e.g., click, fill)
     actionTimeout: 10 * 1000,
@@ -73,7 +74,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         // Use Chromium's latest stable channel
-        channel: 'chrome'
+        ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {})
       },
     },
 

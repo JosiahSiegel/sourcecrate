@@ -25,7 +25,7 @@ const DEFAULT_PAPER = {
     source: 'Test Source',
     citation_count: 10,
     is_open_access: true,
-    relevance_score: 0.5
+    relevance_score: 50
 };
 
 /**
@@ -77,7 +77,7 @@ export function createPaperSet(count, baseOverrides = {}, modifier = null) {
  */
 export function createHighRelevancePaper(overrides = {}) {
     return createPaper({
-        relevance_score: 0.95,
+        relevance_score: 95,
         citation_count: 150,
         is_open_access: true,
         year: new Date().getFullYear(),
@@ -92,7 +92,7 @@ export function createHighRelevancePaper(overrides = {}) {
  */
 export function createLowRelevancePaper(overrides = {}) {
     return createPaper({
-        relevance_score: 0.15,
+        relevance_score: 15,
         citation_count: 0,
         is_open_access: false,
         year: 2010,
@@ -145,7 +145,7 @@ export function createDuplicates(baseOverrides = {}, sources = ['arXiv', 'CrossR
 export function createPapersWithVariedRelevance(count = 5) {
     return createPaperSet(count, {}, (paper, index) => ({
         ...paper,
-        relevance_score: 0.1 + (index * 0.2),
+        relevance_score: 10 + (index * 0.2),
         title: `Paper with relevance ${(0.1 + index * 0.2).toFixed(1)}`
     }));
 }

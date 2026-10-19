@@ -3,6 +3,7 @@
 // ============================================================================
 
 import {
+    escapeHtml,
     isValidUrl,
     isValidPdfUrl,
     isKnownBrokenUrl,
@@ -16,7 +17,6 @@ import {
     deduplicateSourceLinks,
     getPaperKey,
     applyFilters,
-    sortByRelevance,
     filterBookmarksByQuery,
     sortSearchResults
 } from './utils.js';
@@ -28,13 +28,10 @@ import {
     relevanceThreshold,
     renderedPaperKeys,
     bm25ScoringComplete,
-    previousSortOrder,
-    previousFilterQuery,
-    setPreviousSortOrder,
-    setPreviousFilterQuery,
     DownloadReliability
 } from './state.js';
 import {
+    isBookmarked,
     getPaperCollections,
     getReadingStatus
 } from './bookmarks.js';
@@ -202,18 +199,16 @@ function buildSourceLinks(paper) {
     // Primary action: Download PDF button
     if (pdfs.length > 0) {
         const primaryPdf = pdfs[0];
-        const downloadId = `download_${Math.random().toString(36).substr(2, 9)}`;
 
         html += `<div class="primary-pdf-action">
-            <a href="${primaryPdf.url}"
-               download="${filename}"
+            <a href="${escapeHtml(primaryPdf.url)}"
+               download="${escapeHtml(filename)}"
                target="_blank"
                rel="noopener noreferrer"
                class="btn btn-primary btn-pdf-download"
-               data-pdf-url="${primaryPdf.url}"
-               id="${downloadId}"
+               data-pdf-url="${escapeHtml(primaryPdf.url)}"
                onclick="window.trackDownloadAttempt(this.dataset.pdfUrl, this.id); return true;">
-               <span class="pdf-icon">📄</span> ${primaryPdf.label}
+               <span class="pdf-icon">📄</span> ${escapeHtml(primaryPdf.label)}
             </a>`;
 
         // Progressive disclosure: Alternate PDFs
@@ -223,16 +218,14 @@ function buildSourceLinks(paper) {
                 <ul class="alternate-pdf-list">`;
 
             pdfs.slice(1).forEach(access => {
-                const altDownloadId = `download_${Math.random().toString(36).substr(2, 9)}`;
                 html += `<li>
-                    <a href="${access.url}"
-                       download="${filename}"
+                    <a href="${escapeHtml(access.url)}"
+                       download="${escapeHtml(filename)}"
                        target="_blank"
                        rel="noopener noreferrer"
-                       data-pdf-url="${access.url}"
-                       id="${altDownloadId}"
+                       data-pdf-url="${escapeHtml(access.url)}"
                        onclick="window.trackDownloadAttempt(this.dataset.pdfUrl, this.id); return true;">
-                       ${access.label}
+                       ${escapeHtml(access.label)}
                     </a>
                 </li>`;
             });
@@ -298,11 +291,11 @@ function buildSourceLinks(paper) {
                 displayLabel = 'Publisher';
             }
 
-            html += `<a href="${access.url}"
+            html += `<a href="${escapeHtml(access.url)}"
                        target="_blank"
                        class="source-chip source-chip-page"
                        title="Publisher page">
-                       ${displayLabel}${citationText}
+                       ${escapeHtml(displayLabel)}${citationText}
                      </a>`;
         });
 
@@ -341,7 +334,7 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
     const accessLinks = buildSourceLinks(paper);
 
     // Use data attribute for title to avoid escaping issues in onclick
-    const safeTitle = (paper.title || 'Untitled').replace(/"/g, '&quot;');
+    const safeTitle = escapeHtml(paper.title || 'Untitled');
 
     // Build research metadata badges
     let metadataBadges = '';
@@ -350,9 +343,9 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
     if (paper.doi) {
         const fullDoiUrl = getFullDoiUrl(paper.doi);
         metadataBadges += `<span class="metadata-badge badge-doi"
-                                 title="${fullDoiUrl} (click to copy)"
-                                 onclick="navigator.clipboard.writeText('${fullDoiUrl}')"
-                                 onkeypress="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigator.clipboard.writeText('${fullDoiUrl}')}"
+                                 title="${escapeHtml(fullDoiUrl)} (click to copy)"
+                                 data-doi="${escapeHtml(fullDoiUrl)}" onclick="navigator.clipboard.writeText(this.dataset.doi)"
+                                 onkeypress="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigator.clipboard.writeText(this.dataset.doi)}"
                                  tabindex="0"
                                  role="button"
                                  aria-label="Copy DOI to clipboard"
@@ -420,14 +413,14 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
                     <span class="collection-badges-label">In:</span>
                     ${currentCollections.map(c =>
                         `<span class="collection-badge">
-                            ${c.name}
+                            ${escapeHtml(c.name)}
                             <button type="button"
                                     class="collection-badge-remove"
-                                    data-paper-key="${paperKey}"
-                                    data-collection-id="${c.id}"
+                                    data-paper-key="${escapeHtml(paperKey)}"
+                                    data-collection-id="${escapeHtml(c.id)}"
                                     onclick="window.handleRemoveFromCollection(this)"
-                                    title="Remove from ${c.name}"
-                                    aria-label="Remove from ${c.name}">×</button>
+                                    title="Remove from ${escapeHtml(c.name)}"
+                                    aria-label="Remove from ${escapeHtml(c.name)}">×</button>
                         </span>`
                     ).join('')}
                 </div>`;
@@ -448,14 +441,14 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
         if (availableCollections.length > 0) {
             collectionSelector = `
                 <div class="collection-add-dropdown-wrapper">
-                    <button type="button" class="collection-add-dropdown-btn" data-paper-key="${paperKey}">
+                    <button type="button" class="collection-add-dropdown-btn" data-paper-key="${escapeHtml(paperKey)}">
                         <span class="collection-icon">+</span>
                         <span class="collection-label">Add to collection</span>
                         <span class="collection-dropdown-arrow">▾</span>
                     </button>
                     <div class="collection-add-dropdown-menu" style="display: none;">
                         ${availableCollections.map(c =>
-                            `<button type="button" data-collection-id="${c.id}" data-paper-key="${paperKey}">${c.name}</button>`
+                            `<button type="button" data-collection-id="${escapeHtml(c.id)}" data-paper-key="${escapeHtml(paperKey)}">${escapeHtml(c.name)}</button>`
                         ).join('')}
                     </div>
                 </div>`;
@@ -474,14 +467,14 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
             'important': { icon: '★', label: 'Important' }
         };
 
-        const config = statusConfig[currentStatus];
+        const config = statusConfig[currentStatus] || statusConfig.to_read;
 
         statusSelector = `
             <div class="reading-status-wrapper">
                 <button type="button"
                         class="reading-status-btn"
-                        data-paper-key="${paperKey}"
-                        data-current-status="${currentStatus}"
+                        data-paper-key="${escapeHtml(paperKey)}"
+                        data-current-status="${escapeHtml(currentStatus)}"
                         title="Change reading status">
                     <span class="status-icon">${config.icon}</span>
                     <span class="status-label">${config.label}</span>
@@ -491,25 +484,25 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
                     <button type="button"
                             class="status-option"
                             data-status="to_read"
-                            data-paper-key="${paperKey}">
+                            data-paper-key="${escapeHtml(paperKey)}">
                         <span class="status-icon">○</span> To Read
                     </button>
                     <button type="button"
                             class="status-option"
                             data-status="reading"
-                            data-paper-key="${paperKey}">
+                            data-paper-key="${escapeHtml(paperKey)}">
                         <span class="status-icon">◐</span> Reading
                     </button>
                     <button type="button"
                             class="status-option"
                             data-status="read"
-                            data-paper-key="${paperKey}">
+                            data-paper-key="${escapeHtml(paperKey)}">
                         <span class="status-icon">●</span> Read
                     </button>
                     <button type="button"
                             class="status-option"
                             data-status="important"
-                            data-paper-key="${paperKey}">
+                            data-paper-key="${escapeHtml(paperKey)}">
                         <span class="status-icon">★</span> Important
                     </button>
                 </div>
@@ -517,11 +510,11 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
     }
 
     return `
-        <div class="paper-card ${showBadge ? 'paper-card-streaming' : ''}" data-paper-key="${paperKey}">
+        <div class="paper-card ${showBadge ? 'paper-card-streaming' : ''}" data-paper-key="${escapeHtml(paperKey)}">
             <div class="paper-header">
                 <div class="paper-title-actions">
                     <h3>
-                        ${paper.title || 'Untitled'}
+                        ${escapeHtml(paper.title || 'Untitled')}
                         <span class="title-search-icon"
                               data-title="${safeTitle}"
                               onclick="searchByTitle(this.dataset.title)"
@@ -536,10 +529,10 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
                             </svg>
                         </span>
                     </h3>
-                    <button class="bookmark-btn"
-                            data-paper-key="${paperKey}"
+                    <button class="bookmark-btn ${isBookmarked(paperKey) ? 'bookmarked' : ''}"
+                            data-paper-key="${escapeHtml(paperKey)}"
                             onclick="window.togglePaperBookmark(this)"
-                            aria-pressed="false"
+                            aria-pressed="${isBookmarked(paperKey)}"
                             aria-label="Bookmark this paper">
                         <svg class="bookmark-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
@@ -551,11 +544,11 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
             ${(statusSelector || collectionSelector) ? `<div class="paper-actions">${statusSelector}${collectionSelector}</div>` : ''}
             ${metadataBadges ? `<div class="research-metadata-badges">${metadataBadges}</div>` : ''}
             <div class="paper-meta">
-                <span class="paper-authors">${authors}</span>
-                ${paper.year ? `<span class="paper-year">${paper.year}</span>` : ''}
-                ${journal ? `<span class="paper-journal">${journal}</span>` : ''}
+                <span class="paper-authors">${escapeHtml(authors)}</span>
+                ${paper.year ? `<span class="paper-year">${escapeHtml(paper.year)}</span>` : ''}
+                ${journal ? `<span class="paper-journal">${escapeHtml(journal)}</span>` : ''}
             </div>
-            ${abstract ? `<p class="paper-abstract">${abstract}</p>` : ''}
+            ${abstract ? `<p class="paper-abstract">${escapeHtml(abstract)}</p>` : ''}
             ${accessLinks}
         </div>
     `;
@@ -568,7 +561,7 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
  */
 export function updateCitationBadge(paperKey, citationCount) {
     // Find the paper card element
-    const cardElement = document.querySelector(`.paper-card[data-paper-key="${paperKey}"]`);
+    const cardElement = Array.from(document.querySelectorAll('.paper-card')).find(card => card.dataset.paperKey === paperKey);
     if (!cardElement) return;
 
     // Find or create the metadata badges container
@@ -613,7 +606,7 @@ export function updateCitationBadge(paperKey, citationCount) {
  * Update results summary
  * @param {number} count - Number of results
  * @param {boolean} searchComplete - Whether search and scoring are complete
- * @param {number} effectiveThreshold - Actual threshold used (may be lowered from default)
+ * @param {number} effectiveThreshold - Requested relevance threshold
  */
 export function updateResultsSummary(count, searchComplete, effectiveThreshold = relevanceThreshold) {
     const pdfInfo = pdfOnlyFilter ? ` with direct download` : '';
@@ -632,7 +625,7 @@ export function updateResultsSummary(count, searchComplete, effectiveThreshold =
         const statusIcon = isComplete ? '✅ ' : '';
         const statusText = isComplete ? 'Search complete! Found' : 'Found';
 
-        summaryHtml = `${spinner}<p>${statusIcon}${statusText} <strong>${count}</strong> papers${pdfInfo} (${sourcesCompleted}/${totalSources || '?'} sources completed)</p>`;
+        summaryHtml = `${spinner}<p>${statusIcon}${statusText} <strong>${count}</strong> ${count === 1 ? 'paper' : 'papers'}${pdfInfo} (${sourcesCompleted}/${totalSources || '?'} sources completed)</p>`;
     }
 
     let summaryDiv = document.getElementById('results-summary');
@@ -670,17 +663,6 @@ export function getFilteredAndSortedResults(filterQuery = '', sortOrder = 'relev
     // Use bm25ScoringComplete for relevance filter to avoid filtering on heuristic scores
     let filteredResults = applyFilters(allPapers, pdfOnlyFilter, relevanceThreshold, bm25ScoringComplete);
 
-    // Dynamic threshold lowering: If BM25 complete and no results, progressively lower threshold
-    if (bm25ScoringComplete && filteredResults.length === 0 && allPapers.length > 0) {
-        const fallbackThresholds = [25, 15, 5, 0];
-        for (const threshold of fallbackThresholds) {
-            filteredResults = applyFilters(allPapers, pdfOnlyFilter, threshold, true);
-            if (filteredResults.length > 0) {
-                break;
-            }
-        }
-    }
-
     // Apply text filter if provided
     if (filterQuery && filterQuery.trim() !== '') {
         filteredResults = filterBookmarksByQuery(filteredResults, filterQuery);
@@ -699,136 +681,41 @@ export function getFilteredAndSortedResults(filterQuery = '', sortOrder = 'relev
  */
 export function renderStreamingResults(filterQuery = '', sortOrder = 'relevance-desc') {
     const resultsDiv = document.getElementById('results');
-
-    // Check if we have any papers
-    if (papersByKey.size === 0) {
-        resultsDiv.innerHTML = '<p class="no-results">Searching...</p>';
-        return;
-    }
-
-    // Detect sort order change and force full re-render
-    if (sortOrder !== previousSortOrder) {
-        setPreviousSortOrder(sortOrder);
-
-        // Clear rendered state to force full re-render
-        renderedPaperKeys.clear();
-
-        // Clear results container to trigger fast path
-        const resultsContainer = document.getElementById('results-container');
-        if (resultsContainer) {
-            resultsContainer.innerHTML = '';
-        }
-    }
-
-    // Detect filter query change and force full re-render
-    if (filterQuery !== previousFilterQuery) {
-        setPreviousFilterQuery(filterQuery);
-
-        // Clear rendered state to force full re-render
-        renderedPaperKeys.clear();
-
-        // Clear results container to trigger fast path
-        const resultsContainer = document.getElementById('results-container');
-        if (resultsContainer) {
-            resultsContainer.innerHTML = '';
-        }
-    }
-
-    // Check if search is complete (all sources have reported results AND BM25 scoring done)
-    const searchComplete = totalSources > 0 && sourcesCompleted >= totalSources && bm25ScoringComplete;
-
-    // Get filtered and sorted results using shared function
+    const searchComplete = bm25ScoringComplete;
     const filteredResults = getFilteredAndSortedResults(filterQuery, sortOrder);
-
-    // Note: effectiveThreshold tracking removed since it's handled inside getFilteredAndSortedResults
-    const effectiveThreshold = relevanceThreshold;
-
-    // Update summary (pass searchComplete to conditionally show count)
-    updateResultsSummary(filteredResults.length, searchComplete, effectiveThreshold);
-
-    // Get existing results container or create it
-    let resultsContainer = document.getElementById('results-container');
-    if (!resultsContainer) {
-        resultsDiv.innerHTML = '';
-
-        resultsContainer = document.createElement('div');
-        resultsContainer.id = 'results-container';
-        resultsDiv.appendChild(resultsContainer);
+    let container = document.getElementById('results-container');
+    if (!container) {
+        resultsDiv.replaceChildren();
+        container = document.createElement('div');
+        container.id = 'results-container';
+        resultsDiv.appendChild(container);
     }
-
-    // Smart DOM manipulation: only insert/move cards that changed position
-    // This achieves sorted order during streaming WITHOUT flashing
-
-    // Identify new papers
-    const newPapers = filteredResults.filter(paper => !renderedPaperKeys.has(getPaperKey(paper)));
-
-    if (newPapers.length === 0 && renderedPaperKeys.size === filteredResults.length) {
-        return; // No changes needed
-    }
-
-    // If container is empty (e.g., after filter toggle), use fast path
-    if (resultsContainer.children.length === 0) {
-        const fragment = document.createDocumentFragment();
-
-        filteredResults.forEach((paper, index) => {
-            const key = getPaperKey(paper);
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = buildPaperCard(paper, index, !searchComplete);
-            const cardElement = tempDiv.firstElementChild;
-
-            if (cardElement) {
-                cardElement.dataset.paperKey = key;
-                fragment.appendChild(cardElement);
-                renderedPaperKeys.add(key);
-            }
-        });
-
-        resultsContainer.appendChild(fragment);
-        return;
-    }
-
-    // Incremental update: insert new papers and reorder existing ones
-    // Process in forward order for correct insertion into populated DOM
-    filteredResults.forEach((paper, targetIndex) => {
+    updateResultsSummary(filteredResults.length, searchComplete, relevanceThreshold);
+    const existing = new Map(Array.from(container.children).map(card => [card.dataset.paperKey, card]));
+    const wanted = new Set(filteredResults.map(getPaperKey));
+    for (const [key, card] of existing) if (!wanted.has(key)) card.remove();
+    renderedPaperKeys.clear();
+    filteredResults.forEach((paper, index) => {
         const key = getPaperKey(paper);
-
-        // Check if this is a new paper
-        if (!renderedPaperKeys.has(key)) {
-            // Create new card
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = buildPaperCard(paper, targetIndex, !searchComplete);
-            const cardElement = tempDiv.firstElementChild;
-
-            if (!cardElement) return;
-
-            cardElement.dataset.paperKey = key;
-
-            // Insert at correct position
-            const referenceNode = resultsContainer.children[targetIndex];
-            if (referenceNode) {
-                resultsContainer.insertBefore(cardElement, referenceNode);
-            } else {
-                resultsContainer.appendChild(cardElement);
-            }
-
-            renderedPaperKeys.add(key);
-        } else if (targetIndex < 20) {
-            // Existing paper - check if it needs to move (only check top 20)
-            const currentCard = Array.from(resultsContainer.children).find(
-                card => card.dataset.paperKey === key
-            );
-
-            if (currentCard) {
-                const currentIndex = Array.from(resultsContainer.children).indexOf(currentCard);
-
-                // Only move if position changed
-                if (currentIndex !== targetIndex) {
-                    const referenceNode = resultsContainer.children[targetIndex];
-                    if (referenceNode && referenceNode !== currentCard) {
-                        resultsContainer.insertBefore(currentCard, referenceNode);
-                    }
-                }
-            }
+        // Source links use no random identifiers, so unchanged cards keep their DOM and focus.
+        const html = buildPaperCard(paper, index, !searchComplete);
+        let card = existing.get(key);
+        if (!card || card._paperHtml !== html) {
+            const template = document.createElement('template');
+            template.innerHTML = html.trim();
+            const replacement = template.content.firstElementChild;
+            replacement._paperHtml = html;
+            if (card) card.replaceWith(replacement);
+            card = replacement;
         }
+        const position = container.children[index] || null;
+        if (position !== card) container.insertBefore(card, position);
+        renderedPaperKeys.add(key);
     });
+    if (!filteredResults.length) {
+        const message = document.createElement('p');
+        message.className = 'no-results';
+        message.textContent = searchComplete ? 'No papers match your filters.' : 'Searching...';
+        container.replaceChildren(message);
+    }
 }

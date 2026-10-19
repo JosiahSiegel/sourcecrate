@@ -21,6 +21,7 @@ import {
     buildPaperCard
 } from './rendering.js';
 import {
+    escapeHtml,
     getTimeAgo,
     filterBookmarksByQuery,
     sortBookmarks
@@ -44,20 +45,33 @@ export function populateSearchHistory(selectCallback, deleteCallback) {
         return;
     }
 
-    historyList.innerHTML = recentSearches.map((item, index) => {
-        const date = new Date(item.timestamp);
-        const timeAgo = getTimeAgo(date);
-
-        return `
-            <li role="option"
-                onclick="selectHistoryItem('${item.query.replace(/'/g, "\\'")}')"
-                onkeypress="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectHistoryItem('${item.query.replace(/'/g, "\\'")}')}">
-                <span class="history-query">${item.query}</span>
-                <span class="history-meta">${timeAgo}</span>
-                <button class="history-delete-btn" onclick="event.stopPropagation(); deleteHistoryItem(${index})" title="Delete" tabindex="-1">×</button>
-            </li>
-        `;
-    }).join('');
+    historyList.replaceChildren(...recentSearches.map((item, index) => {
+        const row = document.createElement('li');
+        row.setAttribute('role', 'option');
+        row.tabIndex = 0;
+        const select = () => (selectCallback || window.selectHistoryItem)?.(item.query);
+        row.addEventListener('click', select);
+        row.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(); }
+        });
+        const query = document.createElement('span');
+        query.className = 'history-query';
+        query.textContent = item.query;
+        const meta = document.createElement('span');
+        meta.className = 'history-meta';
+        meta.textContent = getTimeAgo(new Date(item.timestamp));
+        const remove = document.createElement('button');
+        remove.className = 'history-delete-btn';
+        remove.title = 'Delete';
+        remove.textContent = '×';
+        remove.addEventListener('keydown', event => event.stopPropagation());
+        remove.addEventListener('click', event => {
+            event.stopPropagation();
+            (deleteCallback || window.deleteHistoryItem)?.(index);
+        });
+        row.append(query, meta, remove);
+        return row;
+    }));
 }
 
 /**
@@ -317,9 +331,9 @@ export function renderCollectionsInline(currentCollection) {
         const isActive = collection.id === currentCollection;
         const activeClass = isActive ? 'active' : '';
 
-        const deleteBtn = collection.isDefault ? '' : ` <span class="collection-delete" onclick="event.preventDefault(); deleteCollectionConfirm('${collection.id}')" title="Delete">×</span>`;
+        const deleteBtn = collection.isDefault ? '' : ` <span class="collection-delete" data-collection="${escapeHtml(collection.id)}" onclick="event.preventDefault(); deleteCollectionConfirm(this.dataset.collection)" title="Delete">×</span>`;
 
-        return `<a href="#" class="collection-link ${activeClass}" data-collection="${collection.id}" onclick="event.preventDefault(); switchCollection('${collection.id}')">${collection.name} (${papers.length})</a>${deleteBtn}`;
+        return `<a href="#" class="collection-link ${activeClass}" data-collection="${escapeHtml(collection.id)}" onclick="event.preventDefault(); switchCollection(this.dataset.collection)">${escapeHtml(collection.name)} (${papers.length})</a>${deleteBtn}`;
     }).join(' · ');
 
     container.innerHTML = collectionsHtml;

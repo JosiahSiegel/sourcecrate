@@ -12,6 +12,8 @@
 }
 
 .paper-title-actions h3 {
+    display: block;
+    overflow-wrap: anywhere;
     flex: 1;
     min-width: 0;
     margin-right: 0.75rem; /* Prevent inline icon from overlapping bookmark button */

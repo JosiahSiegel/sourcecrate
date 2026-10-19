@@ -20,21 +20,18 @@ export class BaseAPIClient {
      * @returns {Promise<Response>} Response object
      */
     async fetchWithTimeout(url, options = {}, priority = 'auto') {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        const timeoutSignal = AbortSignal.timeout(this.timeout);
 
         try {
             const response = await fetch(url, {
                 ...options,
-                signal: controller.signal,
+                signal: AbortSignal.any([timeoutSignal, ...[this.signal, options.signal].filter(Boolean)]),
                 mode: 'cors',
                 priority // Priority Hints API for faster critical requests
             });
-            clearTimeout(timeoutId);
             return response;
         } catch (error) {
-            clearTimeout(timeoutId);
-            if (error.name === 'AbortError') {
+            if (timeoutSignal.aborted) {
                 throw new Error(`${this.name} request timeout after ${this.timeout}ms`);
             }
             throw error;

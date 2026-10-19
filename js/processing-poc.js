@@ -29,6 +29,8 @@
  * Simple fuzzy string matching for paper deduplication
  * Replaces Python's rapidfuzz library
  */
+import { getPaperKey, normalizeDoi } from './utils.js';
+
 export class FuzzyMatcher {
     /**
      * Calculate Dice coefficient similarity (0-1, 1 = identical)
@@ -533,11 +535,7 @@ export class PaperProcessor {
      * Generate unique key for a paper (for deduplication)
      */
     getPaperKey(paper) {
-        // Prefer DOI, fallback to normalized title
-        if (paper.doi) {
-            return `doi:${paper.doi.toLowerCase()}`;
-        }
-        return `title:${FuzzyMatcher.normalizeTitle(paper.title)}`;
+        return getPaperKey(paper);
     }
 
     /**
@@ -545,8 +543,10 @@ export class PaperProcessor {
      */
     areDuplicates(paper1, paper2) {
         // Quick check: same DOI
-        if (paper1.doi && paper2.doi && paper1.doi.toLowerCase() === paper2.doi.toLowerCase()) {
-            return true;
+        const doi1 = normalizeDoi(paper1.doi);
+        const doi2 = normalizeDoi(paper2.doi);
+        if (doi1 && doi2) {
+            return doi1 === doi2;
         }
 
         // Fuzzy title matching
@@ -554,6 +554,7 @@ export class PaperProcessor {
         const title2 = FuzzyMatcher.normalizeTitle(paper2.title);
 
         if (!title1 || !title2) return false;
+        if (JSON.stringify(title1.match(/\d+/g)) !== JSON.stringify(title2.match(/\d+/g))) return false;
 
         const similarity = FuzzyMatcher.similarity(title1, title2);
         return similarity >= this.dedupeThreshold;

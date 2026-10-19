@@ -66,11 +66,8 @@ export function isKnownBrokenUrl(url) {
  */
 export function normalizeDoi(doi) {
     if (!doi) return null;
-    return doi.toLowerCase()
-        .replace('https://doi.org/', '')
-        .replace('http://doi.org/', '')
-        .replace('doi:', '')
-        .trim();
+    return String(doi).trim().toLowerCase()
+        .replace(/^(?:https?:\/\/(?:dx\.)?doi\.org\/|doi:\s*)/, '').trim();
 }
 
 /**
@@ -485,7 +482,7 @@ export function applyFilters(results, pdfOnlyFilter, relevanceThreshold, searchC
             if (paper.relevance_score === undefined || paper.relevance_score === null) {
                 return true;
             }
-            const percentage = Math.round(paper.relevance_score * 100);
+            const percentage = Number(paper.relevance_score) || 0;
             return percentage >= relevanceThreshold;
         });
     }
@@ -694,4 +691,11 @@ export function sortSearchResults(papers, sortOrder) {
         default:
             return sortByRelevance(sorted);
     }
+}
+
+/** Escape untrusted text for HTML text and quoted attributes. */
+export function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[ch]);
 }

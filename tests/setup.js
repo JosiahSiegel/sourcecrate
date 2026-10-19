@@ -83,11 +83,10 @@ afterAll(() => {
 beforeEach(() => {
     // Reset localStorage
     localStorageMock.clear();
-    global.localStorage = localStorageMock;
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: localStorageMock });
 
     // Reset window.location
-    global.window = global.window || {};
-    global.window.location = { ...locationMock };
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...locationMock } });
 
     // Mock console methods (optional - prevents test output pollution)
     // Only mock in test environment, not in beforeEach hooks

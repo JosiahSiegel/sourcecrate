@@ -9,6 +9,7 @@ import BaseAPIClient from './base.js';
 export class UnpaywallClient extends BaseAPIClient {
     constructor() {
         super('Unpaywall');
+        this.timeout = 30000;
         this.baseUrl = 'https://api.unpaywall.org/v2/search';
     }
 
@@ -29,7 +30,7 @@ export class UnpaywallClient extends BaseAPIClient {
             });
 
             const url = `${this.baseUrl}?${params}`;
-            const response = await this.fetchWithTimeout(url, 30000); // 30s timeout
+            const response = await this.fetchWithTimeout(url);
 
             if (!response.ok) {
                 console.warn(`[Unpaywall] HTTP ${response.status}`);

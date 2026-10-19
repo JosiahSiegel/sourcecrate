@@ -8,11 +8,13 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { searchWithClient, clearSearchCache } from '../../js/api.js';
+import ClientSearchOrchestrator from '../../js/api-clients/orchestrator.js';
 import {
     papersByKey,
     renderedPaperKeys,
     sourcesCompleted,
     bm25ScoringComplete,
+    relevanceThreshold,
     setSourcesCompleted,
     setTotalSources,
     setBm25ScoringComplete
@@ -48,7 +50,7 @@ describe('Search Pipeline Integration', () => {
             expect(mockCallback).toHaveBeenCalled();
         });
 
-        it('should set relevance threshold to 0 for cached results', async () => {
+        it('should preserve the requested relevance threshold for cached results', async () => {
             // This tests the fix for cache inconsistency bug
             const mockCallback = createMockCallback();
 
@@ -58,8 +60,7 @@ describe('Search Pipeline Integration', () => {
             // Second search with same query (cache hit)
             await searchWithClient('test query', 10, false, 35, mockCallback);
 
-            // Relevance threshold should be 0 for cached results
-            // (allowing all papers to show, matching first search behavior)
+            expect(relevanceThreshold).toBe(35);
             expect(document.getElementById('searchStatusLive').textContent).toContain('cached');
         });
 
@@ -76,17 +77,15 @@ describe('Search Pipeline Integration', () => {
             const mockCallback = createMockCallback();
 
             // First search
-            await searchWithClient('duplicate test', 10, false, 35, mockCallback);
+            const firstSearch = searchWithClient('duplicate test', 10, false, 35, mockCallback);
             const firstCallCount = mockCallback.mock.calls.length;
-
-            // Clear cache to isolate debounce behavior (cache hits bypass debounce)
-            clearSearchCache();
 
             // Immediate duplicate search - should be debounced
             await searchWithClient('duplicate test', 10, false, 35, mockCallback);
 
             // Should not have triggered additional calls (debounced, not cached)
             expect(mockCallback.mock.calls.length).toBe(firstCallCount);
+            await firstSearch;
         });
     });
 
@@ -172,18 +171,16 @@ describe('Search Pipeline Integration', () => {
             const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
             const liveRegion = document.getElementById('searchStatusLive');
 
-            // Mock an API error by providing invalid callback
-            try {
-                await searchWithClient('error test', 10, false, 35, null);
-            } catch {
-                // Errors are caught and logged to console
-            }
+            const search = vi.spyOn(ClientSearchOrchestrator.prototype, 'searchWithCallbacks')
+                .mockRejectedValueOnce(new Error('Network unavailable'));
+            await searchWithClient('error test', 10, false, 35);
 
             // Error handling should not crash the app
-            expect(liveRegion).toBeDefined();
+            expect(liveRegion.textContent).toContain('Network unavailable');
             expect(consoleError).toHaveBeenCalled();
 
             consoleError.mockRestore();
+            search.mockRestore();
         });
     });
 

@@ -244,21 +244,21 @@ describe('Filtering and sorting', () => {
     const mockPapers = [
         {
             title: 'Paper A',
-            relevance_score: 0.9,
+            relevance_score: 90,
             pdf_url: 'http://example.com/a.pdf',
             citation_count: 100,
             year: 2024
         },
         {
             title: 'Paper B',
-            relevance_score: 0.3,
+            relevance_score: 30,
             pdf_url: null,
             citation_count: 50,
             year: 2023
         },
         {
             title: 'Paper C',
-            relevance_score: 0.7,
+            relevance_score: 70,
             pdf_url: 'http://example.com/c.pdf',
             citation_count: 150,
             year: 2022
@@ -275,7 +275,7 @@ describe('Filtering and sorting', () => {
         it('should filter by relevance threshold', () => {
             const filtered = applyFilters(mockPapers, false, 50, true);
             expect(filtered.length).toBe(2);
-            expect(filtered.every(p => (p.relevance_score * 100) >= 50)).toBe(true);
+            expect(filtered.every(p => p.relevance_score >= 50)).toBe(true);
         });
 
         it('should apply both filters', () => {
@@ -292,16 +292,16 @@ describe('Filtering and sorting', () => {
     describe('sortByRelevance', () => {
         it('should sort by relevance score descending', () => {
             const sorted = sortByRelevance([...mockPapers]);
-            expect(sorted[0].relevance_score).toBe(0.9);
-            expect(sorted[1].relevance_score).toBe(0.7);
-            expect(sorted[2].relevance_score).toBe(0.3);
+            expect(sorted[0].relevance_score).toBe(90);
+            expect(sorted[1].relevance_score).toBe(70);
+            expect(sorted[2].relevance_score).toBe(30);
         });
     });
 
     describe('sortSearchResults', () => {
         it('should sort by relevance by default', () => {
             const sorted = sortSearchResults(mockPapers, 'relevance-desc');
-            expect(sorted[0].relevance_score).toBe(0.9);
+            expect(sorted[0].relevance_score).toBe(90);
         });
 
         it('should sort by citations descending', () => {

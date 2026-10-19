@@ -27,7 +27,8 @@ export const defaultSources = [
  * Runs searches in parallel directly from the browser
  */
 export class ClientSearchOrchestrator {
-    constructor() {
+    constructor({ signal } = {}) {
+        this.signal = signal;
         // Lazy-loaded clients (loaded on first search via dynamic import -40KB initial)
         this.clients = {};
         this.clientPromises = {}; // Track loading promises to avoid duplicate imports
@@ -91,6 +92,7 @@ export class ClientSearchOrchestrator {
 
                 // Instantiate and cache
                 this.clients[sourceName] = new ClientClass();
+                this.clients[sourceName].signal = this.signal;
                 return this.clients[sourceName];
             } catch (error) {
                 console.error(`[ClientSearch] Failed to load ${sourceName}:`, error);
@@ -264,7 +266,7 @@ export class ClientSearchOrchestrator {
 
         // Notify search complete
         if (onComplete) {
-            onComplete({
+            await onComplete({
                 sources_searched: sources.length,
                 sources_successful: sourcesSuccessful,
                 total_results: totalResults,

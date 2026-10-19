@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "relevance_unit": "percent (0–100), not a probability; absent means unscored",
+  "identity_cases": [
+    {"name": "canonical DOI", "a": {"title": "Earlier title", "doi": "https://dx.doi.org/10.1234/ABC"}, "b": {"title": "Updated title", "doi": "doi:10.1234/abc"}, "duplicate": true},
+    {"name": "different DOI", "a": {"title": "Same title", "doi": "10.1234/one"}, "b": {"title": "Same title", "doi": "10.1234/two"}, "duplicate": false},
+    {"name": "case insensitive title", "a": {"title": "Quantum Transport"}, "b": {"title": "QUANTUM TRANSPORT"}, "duplicate": true},
+    {"name": "distinct numbered papers", "a": {"title": "Research Paper 1"}, "b": {"title": "Research Paper 2"}, "duplicate": false}
+  ],
+  "filter_cases": [
+    {"title": "Strong match", "relevance_score": 75},
+    {"title": "Weak match", "relevance_score": 15.18}
+  ]
+}

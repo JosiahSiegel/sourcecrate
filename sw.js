@@ -2,8 +2,8 @@
 // SERVICE WORKER - Cache API responses for instant repeat searches
 // ============================================================================
 
-const CACHE_NAME = 'sourcecrate-v1';
-const SEARCH_CACHE = 'sourcecrate-searches-v1';
+const CACHE_NAME = 'sourcecrate-v2';
+const SEARCH_CACHE = 'sourcecrate-searches-v2';
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Assets to cache on install
@@ -39,7 +39,7 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME && cacheName !== SEARCH_CACHE) {
+                    if (cacheName.startsWith('sourcecrate-') && cacheName !== CACHE_NAME && cacheName !== SEARCH_CACHE) {
                         return caches.delete(cacheName);
                     }
                 })
@@ -61,15 +61,15 @@ self.addEventListener('fetch', (event) => {
     }
 
     // Cache API requests (academic databases)
-    const isAPIRequest = url.hostname.includes('api.crossref.org') ||
-                         url.hostname.includes('export.arxiv.org') ||
-                         url.hostname.includes('api.openalex.org') ||
-                         url.hostname.includes('eutils.ncbi.nlm.nih.gov') ||
-                         url.hostname.includes('doaj.org') ||
-                         url.hostname.includes('europepmc.org') ||
-                         url.hostname.includes('api.unpaywall.org') ||
-                         url.hostname.includes('api.datacite.org') ||
-                         url.hostname.includes('zenodo.org');
+    const isAPIRequest = url.hostname === 'api.crossref.org' ||
+                         url.hostname === 'export.arxiv.org' ||
+                         url.hostname === 'api.openalex.org' ||
+                         url.hostname === 'eutils.ncbi.nlm.nih.gov' ||
+                         url.hostname === 'doaj.org' ||
+                         url.hostname === 'europepmc.org' ||
+                         url.hostname === 'api.unpaywall.org' ||
+                         url.hostname === 'api.datacite.org' ||
+                         url.hostname === 'zenodo.org';
 
     if (isAPIRequest) {
         event.respondWith(
@@ -78,19 +78,17 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // For static assets and dynamic imports: cache-first strategy
-    if (STATIC_ASSETS.some(asset => url.pathname === asset) ||
-        url.pathname.startsWith('/js/api-clients/') ||
-        url.pathname.includes('/js/bloom-filter.js')) {
+    // Refresh same-origin application assets, with an offline fallback.
+    if (url.origin === self.location.origin && (STATIC_ASSETS.some(asset => url.pathname === asset) ||
+        url.pathname.startsWith('/js/') || url.pathname.startsWith('/css/'))) {
         event.respondWith(
-            caches.match(event.request).then((response) => {
-                return response || fetch(event.request).then((fetchResponse) => {
-                    return caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, fetchResponse.clone());
-                        return fetchResponse;
-                    });
-                });
-            })
+            fetch(event.request).then(async response => {
+                if (response.ok) {
+                    try { const cache = await caches.open(CACHE_NAME); await cache.put(event.request, response.clone()); }
+                    catch { /* Storage is optional; keep serving the network response. */ }
+                }
+                return response;
+            }).catch(() => caches.match(event.request))
         );
         return;
     }
@@ -105,8 +103,9 @@ self.addEventListener('fetch', (event) => {
  * Cache API requests with timestamp for TTL
  */
 async function cacheAPIRequest(request) {
-    const cache = await caches.open(SEARCH_CACHE);
-    const cached = await cache.match(request);
+    let cache, cached;
+    try { cache = await caches.open(SEARCH_CACHE); cached = await cache.match(request); }
+    catch { return fetch(request); }
 
     if (cached) {
         // Check if cached response is still fresh
@@ -116,18 +115,21 @@ async function cacheAPIRequest(request) {
         }
     }
 
+    let timeoutId;
     try {
         // Fetch fresh data with 30s timeout (2x client timeout for safety margin)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        timeoutId = setTimeout(() => controller.abort(), 30000);
 
         const response = await fetch(request, { signal: controller.signal });
         clearTimeout(timeoutId);
 
         // Cache successful responses
         if (response.ok) {
-            await cache.put(request, response.clone());
-            await setCacheTime(request.url, Date.now());
+            try {
+                await cache.put(request, response.clone());
+                await setCacheTime(request.url, Date.now());
+            } catch { /* Cache failures must not discard a successful response. */ }
         }
 
         return response;
@@ -137,7 +139,7 @@ async function cacheAPIRequest(request) {
             return cached;
         }
         throw error;
-    }
+    } finally { clearTimeout(timeoutId); }
 }
 
 /**
@@ -145,9 +147,15 @@ async function cacheAPIRequest(request) {
  */
 async function setCacheTime(url, timestamp) {
     const db = await openDB();
-    const tx = db.transaction('cache-times', 'readwrite');
-    tx.objectStore('cache-times').put({ url, timestamp });
-    return tx.complete;
+    try {
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction('cache-times', 'readwrite');
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error);
+            tx.objectStore('cache-times').put({ url, timestamp });
+        });
+    } finally { db.close(); }
 }
 
 /**
@@ -156,9 +164,13 @@ async function setCacheTime(url, timestamp) {
 async function getCacheTime(url) {
     try {
         const db = await openDB();
-        const tx = db.transaction('cache-times', 'readonly');
-        const record = await tx.objectStore('cache-times').get(url);
-        return record?.timestamp;
+        try {
+            return await new Promise((resolve, reject) => {
+                const request = db.transaction('cache-times', 'readonly').objectStore('cache-times').get(url);
+                request.onsuccess = () => resolve(request.result?.timestamp ?? null);
+                request.onerror = () => reject(request.error);
+            });
+        } finally { db.close(); }
     } catch {
         return null;
     }

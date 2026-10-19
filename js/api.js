@@ -6,11 +6,7 @@ import {
     papersByKey,
     sourcesCompleted,
     totalSources,
-    pdfOnlyFilter,
-    relevanceThreshold,
-    currentQuery,
     renderedPaperKeys,
-    bm25ScoringComplete,
     setSourcesCompleted,
     setTotalSources,
     setPdfOnlyFilter,
@@ -20,15 +16,11 @@ import {
 } from './state.js';
 import PaperProcessor from './processing-poc.js';
 import ClientSearchOrchestrator, { defaultSources } from './api-clients/orchestrator.js';
-import { applyFilters } from './utils.js';
+import { normalizeDoi } from './utils.js';
 import BloomFilter from './bloom-filter.js';
-import { updateCitationBadge } from './rendering.js';
 
-// Initialize paper processor for deduplication and BM25 scoring
-const paperProcessor = new PaperProcessor();
-
-// Initialize search orchestrator
-const clientSearchOrchestrator = new ClientSearchOrchestrator();
+// Only the active session may publish results or populate the query cache.
+let activeSearch = null;
 
 // Query result cache with 5-minute TTL
 const searchCache = new Map();
@@ -52,7 +44,7 @@ function updateLiveRegion(message) {
  * Generate cache key from search parameters
  */
 function getSearchCacheKey(query, limit, pdfOnly) {
-    return `${query.toLowerCase().trim()}|${limit}|${pdfOnly}`;
+    return JSON.stringify([query.trim(), limit, pdfOnly]);
 }
 
 /**
@@ -63,16 +55,24 @@ function getSearchCacheKey(query, limit, pdfOnly) {
  * @param {number} minRelevance - Minimum relevance threshold
  * @param {Function} renderCallback - Callback to render results
  */
-export async function searchWithClient(query, limit, pdfOnly = false, minRelevance = 35, renderCallback) {
+export async function searchWithClient(query, limit, pdfOnly = false, minRelevance = 35, renderCallback = () => {}) {
+    if (typeof renderCallback !== "function") renderCallback = () => {};
     const cacheKey = getSearchCacheKey(query, limit, pdfOnly);
     const now = Date.now();
+    if (cacheKey === lastSearchKey && activeSearch && !activeSearch.done && activeSearch.minRelevance === minRelevance && now - lastSearchTime < DEBOUNCE_MS) return;
+    activeSearch?.controller.abort();
+    const session = { controller: new AbortController(), done: false, minRelevance };
+    activeSearch = session;
+    const isActive = () => activeSearch === session && !session.controller.signal.aborted;
+    const paperProcessor = new PaperProcessor();
+    const clientSearchOrchestrator = new ClientSearchOrchestrator({ signal: session.controller.signal });
 
     // Check cache FIRST - instant O(1) lookup with no side effects
     const cached = searchCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
         // Use cached results
         papersByKey.clear();
-        cached.papers.forEach(paper => {
+        structuredClone(cached.papers).forEach(paper => {
             const key = paperProcessor.getPaperKey(paper);
             papersByKey.set(key, paper);
         });
@@ -81,17 +81,13 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         setSourcesCompleted(cached.sourcesCompleted);
         setTotalSources(cached.totalSources);
         setPdfOnlyFilter(pdfOnly);
-        setRelevanceThreshold(0); // Disable relevance filter for cached results - already vetted
+        setRelevanceThreshold(minRelevance);
         setCurrentQuery(query);
         setBm25ScoringComplete(true);
 
-        // Copy corpus stats from cache
-        paperProcessor.bm25.documentFrequency = new Map(cached.corpusStats.documentFrequency);
-        paperProcessor.bm25.totalDocs = cached.corpusStats.totalDocs;
-        paperProcessor.bm25.processedDocIds = new Set(cached.corpusStats.processedDocIds);
-
         lastSearchKey = cacheKey;
         lastSearchTime = now;
+        session.done = true;
 
         // Show cached results
         const resultsDiv = document.getElementById('results');
@@ -105,11 +101,6 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
             summaryDiv.className = 'results-summary results-summary-complete';
         }
 
-        return;
-    }
-
-    // Debounce rapid duplicate searches (within 300ms) - only for cache MISSES
-    if (cacheKey === lastSearchKey && (now - lastSearchTime) < DEBOUNCE_MS) {
         return;
     }
 
@@ -152,10 +143,12 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
             sources: defaultSources.filter(s => s !== 'semanticscholar'),
 
             onSourceStart: (data) => {
+                if (!isActive()) return;
                 updateLiveRegion(`Searching ${data.source}...`);
             },
 
             onResults: (data) => {
+                if (!isActive()) return;
                 // Deduplicate, merge, and score incrementally with current corpus stats
                 const newPapers = [];
 
@@ -165,7 +158,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
 
                     // Ultra-fast path: Bloom filter check first (O(1) probabilistic)
                     if (paper.doi) {
-                        const normalizedDoi = paper.doi.toLowerCase().trim();
+                        const normalizedDoi = normalizeDoi(paper.doi);
 
                         // If bloom filter says "definitely not seen before", skip hash lookup
                         if (!doiBloom.mightContain(normalizedDoi)) {
@@ -198,15 +191,16 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
                         // Defensive: ensure existing paper exists
                         if (existing) {
                             const merged = paperProcessor.mergePapers(existing, paper);
-                            papersByKey.set(matchKey, merged);
+                            const mergedKey = paperProcessor.getPaperKey(merged);
+                            papersByKey.delete(matchKey);
+                            papersByKey.set(mergedKey, merged);
+                            if (merged.doi) {
+                                const doi = normalizeDoi(merged.doi);
+                                doiIndex.set(doi, mergedKey);
+                                doiBloom.add(doi);
+                            }
                             newPapers.push(merged);
 
-                            // If citation count changed and card is already rendered, update the badge
-                            const existingCount = existing.citation_count || 0;
-                            const mergedCount = merged.citation_count || 0;
-                            if (mergedCount !== existingCount && renderedPaperKeys.has(matchKey)) {
-                                updateCitationBadge(matchKey, mergedCount);
-                            }
                         } else {
                             // Key was found but paper was removed - treat as new paper
                             const key = paperProcessor.getPaperKey(paper);
@@ -237,7 +231,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
 
                         // Index by DOI for fast future lookups (also add to bloom if not already)
                         if (paper.doi) {
-                            const normalizedDoi = paper.doi.toLowerCase().trim();
+                            const normalizedDoi = normalizeDoi(paper.doi);
                             doiIndex.set(normalizedDoi, key);
                             doiBloom.add(normalizedDoi);
                         }
@@ -257,7 +251,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
 
                 // Score new papers with current corpus stats
                 newPapers.forEach(paper => {
-                    paper.relevance_score = paperProcessor.bm25.score(paper, currentQuery, avgLength);
+                    paper.relevance_score = paperProcessor.bm25.score(paper, query, avgLength);
                 });
 
                 // No need to update anything - papersByKey is the source of truth
@@ -265,6 +259,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
             },
 
             onSourceComplete: (data) => {
+                if (!isActive()) return;
                 setSourcesCompleted(data.completed);
                 if (data.total && totalSources === 0) {
                     setTotalSources(data.total);
@@ -273,20 +268,22 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
             },
 
             onComplete: async (data) => {
-                // Papers already scored incrementally during streaming
-                // Just mark search as complete
+                if (!isActive()) return;
+                const papers = Array.from(papersByKey.values());
+                paperProcessor.bm25.reset();
+                paperProcessor.bm25.updateCorpusStats(papers);
+                const avgLength = papers.reduce((sum, p) => sum + paperProcessor.bm25.getPaperText(p)
+                    .toLowerCase().split(/\s+/).filter(t => t.length > 2).length, 0) / Math.max(papers.length, 1);
+                papers.forEach(p => { p.relevance_score = paperProcessor.bm25.score(p, query, avgLength); });
+                session.done = true;
+                // Publish rankings computed from the complete corpus.
                 setBm25ScoringComplete(true);
 
                 // Cache results for this query
                 searchCache.set(cacheKey, {
-                    papers: Array.from(papersByKey.values()),
+                    papers: structuredClone(papers),
                     sourcesCompleted: sourcesCompleted,
                     totalSources: totalSources,
-                    corpusStats: {
-                        documentFrequency: new Map(paperProcessor.bm25.documentFrequency),
-                        totalDocs: paperProcessor.bm25.totalDocs,
-                        processedDocIds: new Set(paperProcessor.bm25.processedDocIds)
-                    },
                     timestamp: Date.now()
                 });
 
@@ -307,17 +304,23 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
             }
         });
     } catch (error) {
+        if (!isActive()) return;
+        session.done = true;
         console.error('Search error:', error);
         updateLiveRegion(`Error: ${error.message}`);
     }
 }
 
 /**
- * Clear search cache only (preserves debounce state for testing)
+ * Clear cached results and cancel the active search session.
  * @private
  */
 export function clearSearchCache() {
     searchCache.clear();
+    activeSearch?.controller.abort();
+    activeSearch = null;
+    lastSearchKey = null;
+    lastSearchTime = 0;
 }
 
 /**

@@ -2,7 +2,10 @@
   "mockPapers": [
     {
       "title": "Machine Learning: A Comprehensive Overview",
-      "authors": ["John Smith", "Jane Doe"],
+      "authors": [
+        "John Smith",
+        "Jane Doe"
+      ],
       "abstract": "This paper provides a comprehensive overview of machine learning techniques including supervised learning, unsupervised learning, and reinforcement learning. We discuss key algorithms and their applications in modern artificial intelligence systems.",
       "doi": "10.1234/ml.2024.001",
       "year": 2024,
@@ -12,11 +15,14 @@
       "source": "arXiv",
       "citation_count": 150,
       "is_open_access": true,
-      "relevance_score": 0.95
+      "relevance_score": 95.0
     },
     {
       "title": "Deep Learning for Natural Language Processing",
-      "authors": ["Alice Johnson", "Bob Wilson"],
+      "authors": [
+        "Alice Johnson",
+        "Bob Wilson"
+      ],
       "abstract": "We present novel deep learning architectures for natural language processing tasks. Our approach achieves state-of-the-art results on benchmark datasets for sentiment analysis, machine translation, and question answering.",
       "doi": "10.1234/nlp.2023.042",
       "year": 2023,
@@ -26,11 +32,14 @@
       "source": "CrossRef",
       "citation_count": 89,
       "is_open_access": false,
-      "relevance_score": 0.87
+      "relevance_score": 87.0
     },
     {
       "title": "Neural Networks in Computer Vision",
-      "authors": ["Emily Chen", "David Martinez"],
+      "authors": [
+        "Emily Chen",
+        "David Martinez"
+      ],
       "abstract": "This work explores the application of neural networks to computer vision problems. We demonstrate improved performance on image classification, object detection, and semantic segmentation tasks.",
       "doi": "10.1234/cv.2024.013",
       "year": 2024,
@@ -40,11 +49,13 @@
       "source": "OpenAlex",
       "citation_count": 45,
       "is_open_access": true,
-      "relevance_score": 0.72
+      "relevance_score": 72.0
     },
     {
       "title": "Reinforcement Learning Applications in Robotics",
-      "authors": ["Michael Brown"],
+      "authors": [
+        "Michael Brown"
+      ],
       "abstract": "We investigate reinforcement learning approaches for robotic control systems. Our experiments show that policy gradient methods outperform traditional control algorithms in complex manipulation tasks.",
       "doi": "10.1234/rl.2023.028",
       "year": 2023,
@@ -54,11 +65,15 @@
       "source": "PubMed",
       "citation_count": 12,
       "is_open_access": false,
-      "relevance_score": 0.58
+      "relevance_score": 58.0
     },
     {
       "title": "Optimization Algorithms for Large-Scale Systems",
-      "authors": ["Sarah Lee", "Tom Anderson", "Lisa White"],
+      "authors": [
+        "Sarah Lee",
+        "Tom Anderson",
+        "Lisa White"
+      ],
       "abstract": "This paper presents novel optimization algorithms designed for large-scale distributed systems. We prove convergence guarantees and demonstrate practical efficiency improvements over existing methods.",
       "doi": "10.1234/opt.2024.007",
       "year": 2024,
@@ -68,13 +83,16 @@
       "source": "arXiv",
       "citation_count": 203,
       "is_open_access": true,
-      "relevance_score": 0.45
+      "relevance_score": 45.0
     }
   ],
-
   "duplicatePaper": {
     "title": "Machine Learning A Comprehensive Overview",
-    "authors": ["John Smith", "Jane Doe", "Additional Author"],
+    "authors": [
+      "John Smith",
+      "Jane Doe",
+      "Additional Author"
+    ],
     "abstract": "This paper provides a comprehensive overview of machine learning techniques including supervised learning, unsupervised learning, and reinforcement learning. We discuss key algorithms and their applications in modern artificial intelligence systems.",
     "doi": "10.1234/ml.2024.001",
     "year": 2024,
@@ -85,7 +103,6 @@
     "citation_count": 25,
     "is_open_access": true
   },
-
   "lowQualityPaper": {
     "title": "Some Random Paper",
     "authors": [],
@@ -98,13 +115,14 @@
     "source": "Unknown",
     "citation_count": 0,
     "is_open_access": false,
-    "relevance_score": 0.15
+    "relevance_score": 15.0
   },
-
   "pdfAvailablePapers": [
     {
       "title": "Open Access Paper With PDF",
-      "authors": ["Test Author"],
+      "authors": [
+        "Test Author"
+      ],
       "abstract": "Test abstract",
       "doi": "10.1234/test.001",
       "year": 2024,
@@ -114,11 +132,13 @@
       "source": "arXiv",
       "citation_count": 10,
       "is_open_access": true,
-      "relevance_score": 0.6
+      "relevance_score": 60.0
     },
     {
       "title": "Paper Without PDF",
-      "authors": ["Test Author 2"],
+      "authors": [
+        "Test Author 2"
+      ],
       "abstract": "Test abstract 2",
       "doi": "10.1234/test.002",
       "year": 2024,
@@ -128,7 +148,7 @@
       "source": "CrossRef",
       "citation_count": 5,
       "is_open_access": false,
-      "relevance_score": 0.5
+      "relevance_score": 50.0
     }
   ]
 }
