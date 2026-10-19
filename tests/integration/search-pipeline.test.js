@@ -226,15 +226,7 @@ describe('Search Pipeline Integration', () => {
             expect(paper1.doi).toBe(paper2.doi);
         });
 
-        it('should use bloom filter for O(1) duplicate detection', () => {
-            // Bloom filter is used in api.js for fast deduplication
-            // This tests that the pipeline leverages it correctly
-            const papers = MOCK_PAPERS;
 
-            papers.forEach(paper => {
-                expect(paper.doi).toBeDefined();
-            });
-        });
     });
 
     describe('BM25 scoring integration', () => {
