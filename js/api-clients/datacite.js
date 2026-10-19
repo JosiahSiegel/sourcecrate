@@ -2,14 +2,16 @@
 // DATACITE.JS - DataCite API client (CORS-enabled)
 // ============================================================================
 // API Docs: https://support.datacite.org/docs/api
-// Rate Limits: Unlimited with reasonable use
 
 import BaseAPIClient from './base.js';
 
 export class DataCiteClient extends BaseAPIClient {
-    constructor() {
+    constructor({ clientId } = {}) {
         super('DataCite');
         this.baseUrl = 'https://api.datacite.org/dois';
+        this.clientId = clientId;
+        // Two attempts, including backoff, fit inside the shared 25-second search budget.
+        this.timeout = 9000;
     }
 
     /**
@@ -19,28 +21,62 @@ export class DataCiteClient extends BaseAPIClient {
      * @returns {Promise<Array>} Array of papers
      */
     async search(query, limit = 10) {
-        try {
-            const params = new URLSearchParams({
-                query: query,
-                'page[size]': limit,
-                'page[number]': 1
-            });
-
-            const url = `${this.baseUrl}?${params}`;
-            const response = await this.fetchWithTimeout(url);
-
-            if (!response.ok) {
-                console.warn(`[DataCite] HTTP ${response.status}`);
-                return [];
+        this.lastError = null;
+        const params = new URLSearchParams({
+            query,
+            'page[size]': limit,
+            'page[number]': 1,
+            'fields[dois]': 'doi,titles,creators,descriptions,publicationYear,url,publisher'
+        });
+        if (this.clientId) params.set('client-id', this.clientId);
+        const url = `${this.baseUrl}?${params}`;
+        for (let attempt = 0; attempt < 2; attempt++) {
+            let retry = false;
+            let delay = 500;
+            try {
+                this.signal?.throwIfAborted();
+                const response = await this.fetchWithTimeout(url);
+                if (response.ok) {
+                    const papers = this.parseDataCiteResponse(await response.json());
+                    this.lastError = null;
+                    return papers;
+                }
+                retry = response.status === 429 || response.status >= 500;
+                const retryAfter = response.headers.get('Retry-After');
+                if (retryAfter !== null) {
+                    const seconds = Number(retryAfter);
+                    const requested = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter) - Date.now();
+                    if (Number.isFinite(requested)) delay = Math.max(delay, requested);
+                }
+                await response.body?.cancel();
+            } catch (error) {
+                this.lastError = error.message;
+                retry = error instanceof TypeError || error.name === 'TimeoutError' || /request timeout after/.test(error.message);
             }
-
-            const data = await response.json();
-            return this.parseDataCiteResponse(data);
-        } catch (error) {
-            this.lastError = error.message;
-            console.error(`[DataCite] Search error:`, error);
-            return [];
+            // Do not retry invalid requests, caller cancellation, or long rate limits.
+            if (!retry || attempt === 1 || this.signal?.aborted || delay > 1000) break;
+            try {
+                await this.waitForRetry(delay);
+            } catch (error) {
+                this.lastError = error.message;
+                break;
+            }
         }
+        return [];
+    }
+
+    waitForRetry(delay) {
+        return new Promise((resolve, reject) => {
+            const finish = () => { this.signal?.removeEventListener('abort', abort); resolve(); };
+            const timer = setTimeout(finish, delay);
+            const abort = () => {
+                clearTimeout(timer);
+                this.signal?.removeEventListener('abort', abort);
+                reject(this.signal.reason || new Error('Search cancelled'));
+            };
+            this.signal?.addEventListener('abort', abort, { once: true });
+            if (this.signal?.aborted) abort();
+        });
     }
 
     /**

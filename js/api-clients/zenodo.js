@@ -5,11 +5,14 @@
 // Rate Limits: Guest users: 60 req/min, 2000 req/hour
 
 import BaseAPIClient from './base.js';
+import DataCiteClient from './datacite.js';
 
 export class ZenodoClient extends BaseAPIClient {
     constructor() {
         super('Zenodo');
         this.baseUrl = 'https://zenodo.org/api/records/';
+        // Reserve time for the public metadata index if the direct API is unavailable.
+        this.timeout = 5000;
     }
 
     /**
@@ -19,7 +22,11 @@ export class ZenodoClient extends BaseAPIClient {
      * @returns {Promise<Array>} Array of papers
      */
     async search(query, limit = 10) {
+        this.lastError = null;
+        this.lastWarning = null;
+        this.lastVia = null;
         try {
+            this.signal?.throwIfAborted();
             const params = new URLSearchParams({
                 q: query,
                 size: limit,
@@ -31,17 +38,31 @@ export class ZenodoClient extends BaseAPIClient {
             const response = await this.fetchWithTimeout(url);
 
             if (!response.ok) {
-                console.warn(`[Zenodo] HTTP ${response.status}`);
-                return [];
+                await response.body?.cancel();
+                if (response.status !== 403 && response.status !== 429 && response.status < 500) return [];
+            } else {
+                const data = await response.json();
+                return this.parseZenodoResponse(data);
             }
-
-            const data = await response.json();
-            return this.parseZenodoResponse(data);
         } catch (error) {
             this.lastError = error.message;
-            console.error(`[Zenodo] Search error:`, error);
+        }
+        if (this.signal?.aborted) return [];
+
+        // Public DOI metadata, not a proxy for Zenodo's network restriction. Do not
+        // invent file links: this index cannot supply Zenodo's direct downloads.
+        const directError = this.lastError;
+        const fallback = new DataCiteClient({ clientId: 'cern.zenodo' });
+        fallback.signal = this.signal;
+        const papers = await fallback.search(query, limit);
+        if (fallback.lastError) {
+            this.lastError = `Zenodo: ${directError}; DataCite fallback: ${fallback.lastError}`;
             return [];
         }
+        this.lastError = null;
+        this.lastVia = 'datacite';
+        this.lastWarning = `Zenodo direct search unavailable (${directError}). Using DataCite's Zenodo index; coverage may differ and direct file links are unavailable.`;
+        return papers.map(paper => ({ ...paper, source: 'Zenodo', metadata_source: 'DataCite' }));
     }
 
     /**
@@ -82,7 +103,7 @@ export class ZenodoClient extends BaseAPIClient {
                     pdf_url: pdfUrl || null,
                     open_access_pdf: pdfUrl || null,
                     source: 'Zenodo',
-                    is_open_access: true, // Zenodo is open access repository
+                    is_open_access: metadata.access_right === 'open',
                     citation_count: 0, // Zenodo doesn't provide citation counts in API
                     journal: metadata.journal?.title
                 };

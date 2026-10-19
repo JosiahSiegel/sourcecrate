@@ -117,6 +117,7 @@ export const DownloadReliability = {
 export let papersByKey = new Map(); // Deduplication map: key → merged paper (SOURCE OF TRUTH)
 export let sourcesCompleted = 0;
 export let totalSources = 0;
+export let sourceNotices = [];
 export let pdfOnlyFilter = false;
 // Ranking orders results; only an explicitly requested filter should hide them.
 export const DEFAULT_RELEVANCE_THRESHOLD = 0;
@@ -141,6 +142,10 @@ export function setSourcesCompleted(value) {
 
 export function setTotalSources(value) {
     totalSources = value;
+}
+
+export function setSourceNotices(value) {
+    sourceNotices = value;
 }
 
 export function setPdfOnlyFilter(value) {

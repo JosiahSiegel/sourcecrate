@@ -72,6 +72,29 @@ section {
     margin: 0;
 }
 
+.results-summary {
+    flex-wrap: wrap;
+}
+
+.source-notices {
+    flex-basis: 100%;
+    min-width: 0;
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+}
+
+.source-notices summary {
+    padding: 0.5rem;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: normal;
+}
+
+.source-notices ul {
+    padding-left: 1.25rem;
+    margin: 0.5rem 0 0;
+}
+
 .results-summary-complete {
     border-left-color: var(--success-color);
 }

@@ -240,7 +240,8 @@ export class ClientSearchOrchestrator {
                         count: papers.length,
                         completed: sourcesCompleted,
                         total: sources.length,
-                        error: client.lastError || null
+                        error: client.lastError || null,
+                        ...(client.lastWarning ? { warning: client.lastWarning, via: client.lastVia } : {})
                     });
                 }
             } catch (error) {

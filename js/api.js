@@ -7,6 +7,8 @@ import {
     papersByKey,
     sourcesCompleted,
     totalSources,
+    sourceNotices,
+    setSourceNotices,
     renderedPaperKeys,
     setSourcesCompleted,
     setTotalSources,
@@ -77,6 +79,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         renderedPaperKeys.clear();
         setSourcesCompleted(cached.sourcesCompleted);
         setTotalSources(cached.totalSources);
+        setSourceNotices(cached.sourceNotices || []);
         setPdfOnlyFilter(pdfOnly);
         setRelevanceThreshold(minRelevance);
         setCurrentQuery(query);
@@ -109,6 +112,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
     renderedPaperKeys.clear();
     setSourcesCompleted(0);
     setTotalSources(0);
+    setSourceNotices([]);
     setPdfOnlyFilter(pdfOnly);
     setRelevanceThreshold(minRelevance);
     setCurrentQuery(query);
@@ -143,6 +147,9 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
 
             onSourceComplete: (data) => {
                 if (!isActive()) return;
+                if (data.error || data.warning) {
+                    setSourceNotices([...sourceNotices, { source: data.source, message: data.error || data.warning }]);
+                }
                 setSourcesCompleted(data.completed);
                 if (data.total && totalSources === 0) {
                     setTotalSources(data.total);
@@ -162,6 +169,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
                     papers: structuredClone(papers),
                     sourcesCompleted: sourcesCompleted,
                     totalSources: totalSources,
+                    sourceNotices: structuredClone(sourceNotices),
                     timestamp: Date.now()
                 });
 

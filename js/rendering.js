@@ -21,6 +21,7 @@ import {
     papersByKey,
     sourcesCompleted,
     totalSources,
+    sourceNotices,
     pdfOnlyFilter,
     relevanceThreshold,
     renderedPaperKeys,
@@ -450,6 +451,11 @@ export function updateResultsSummary(count, searchComplete, effectiveThreshold =
         const statusText = isComplete ? 'Search complete! Found' : 'Found';
 
         summaryHtml = `${spinner}<p>${statusIcon}${statusText} <strong>${count}</strong> ${count === 1 ? 'paper' : 'papers'}${pdfInfo} (${sourcesCompleted}/${totalSources || '?'} sources completed)</p>`;
+    }
+
+    if (sourceNotices.length) {
+        summaryHtml += `<details class="source-notices"><summary>Some sources have limited availability (${sourceNotices.length})</summary><ul>${sourceNotices.map(notice =>
+            `<li>${escapeHtml(notice.source)}: ${escapeHtml(notice.message)}</li>`).join('')}</ul></details>`;
     }
 
     let summaryDiv = document.getElementById('results-summary');

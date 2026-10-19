@@ -36,7 +36,8 @@ export async function searchPapers(query, options = {}) {
             onResults?.({ ...data, papers });
         },
         onSourceComplete(data) {
-            sourceStatus.push({ source: data.source, count: data.count, error: data.error || null });
+            sourceStatus.push({ source: data.source, count: data.count, error: data.error || null,
+                ...(data.warning ? { warning: data.warning, via: data.via } : {}) });
             onSourceComplete?.(data);
         },
         async onComplete(data) {
@@ -46,5 +47,5 @@ export async function searchPapers(query, options = {}) {
     if (signal?.aborted) throw signal.reason || new Error('Search cancelled');
     const filtered = applyFilters(papers, pdfOnly, 0, true);
     return { ...summary, total_candidates: summary.total_results, total_results: filtered.length, papers: filtered,
-        source_status: sourceStatus, partial: sourceStatus.some(s => s.error) };
+        source_status: sourceStatus, partial: sourceStatus.some(s => s.error || s.warning) };
 }

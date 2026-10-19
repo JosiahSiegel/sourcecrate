@@ -1,5 +1,55 @@
 import { test, expect } from '@playwright/test';
 
+test('DataCite retries and blocked Zenodo returns indexed records with persistent availability notices', async ({ page }) => {
+    let dataCiteAttempts = 0;
+    let zenodoAttempts = 0;
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.route('**/*', async route => {
+        const url = new URL(route.request().url());
+        if (!['fetch', 'xhr'].includes(route.request().resourceType()) ||
+            url.origin === new URL(page.url()).origin) return route.continue();
+        if (url.hostname === 'zenodo.org') {
+            zenodoAttempts++;
+            return route.fulfill({ status: 403, body: 'Network restricted' });
+        }
+        let body = {};
+        if (url.hostname === 'api.datacite.org') {
+            const fallback = url.searchParams.get('client-id') === 'cern.zenodo';
+            if (!fallback && ++dataCiteAttempts === 1) return route.fulfill({ status: 503, body: 'Try later' });
+            body = { data: [{ attributes: {
+                doi: fallback ? '10.5281/zenodo.123' : '10.1234/climate',
+                titles: [{ title: fallback ? 'Climate observations from Zenodo' : 'Climate research from DataCite' }],
+                creators: [{ name: 'Researcher, A' }],
+                url: fallback ? 'https://zenodo.org/records/123' : 'https://example.org/climate'
+            } }] };
+        }
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+    });
+    await page.goto('/');
+    await expect(page).toHaveTitle(/SourceCrate/i);
+    await page.fill('#searchQuery', 'climate observations');
+    await page.keyboard.press('Escape');
+    await page.click('#searchForm button[type="submit"]');
+    await expect(page.locator('#results-summary')).toContainText('Search complete');
+    await expect(page.locator('.paper-card')).toHaveCount(2);
+    expect(dataCiteAttempts).toBe(2);
+    expect(zenodoAttempts).toBe(1);
+    const zenodo = page.locator('.paper-card').filter({ hasText: 'Climate observations from Zenodo' });
+    await expect(zenodo.locator('h3 a')).toHaveAttribute('href', 'https://zenodo.org/records/123');
+    await expect(zenodo).not.toContainText('Download PDF');
+    await page.locator('.source-notices summary').click();
+    await expect(page.locator('.source-notices')).toContainText("Using DataCite's Zenodo index");
+    await expect(page.locator('.source-notices')).toContainText('direct file links are unavailable');
+    // A cached repeat must preserve both records and the source availability notice.
+    await page.click('#searchForm button[type="submit"]');
+    await expect(page.locator('.paper-card')).toHaveCount(2);
+    await expect(page.locator('.source-notices')).toContainText("Using DataCite's Zenodo index");
+    expect(dataCiteAttempts).toBe(2);
+    expect(zenodoAttempts).toBe(1);
+    expect(errors).toEqual([]);
+});
+
 test('book title-author matches survive deduplication against similarly named articles', async ({ page }) => {
     await page.route('**/*', async route => {
         const url = route.request().url();
