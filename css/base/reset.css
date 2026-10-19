@@ -13,6 +13,7 @@ a:focus-visible,
 button:focus-visible,
 details:focus-visible,
 input:focus-visible,
+select:focus-visible,
 .source-chip:focus-visible {
     outline: 3px solid var(--accent-color);
     outline-offset: 2px;

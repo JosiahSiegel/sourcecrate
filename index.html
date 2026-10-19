@@ -89,12 +89,15 @@
                             placeholder="Filter results..."
                             autocomplete="off"
                         >
-                        <select id="resultsRelevanceFilter" class="search-minimal" aria-label="Minimum relevance score">
-                            <option value="0">All relevance</option>
-                            <option value="25" selected>Relevance 25+</option>
-                            <option value="50">Relevance 50+</option>
-                            <option value="75">Relevance 75+</option>
-                        </select>
+                        <div class="relevance-dropdown-wrapper">
+                            <select id="resultsRelevanceFilter" class="relevance-dropdown-select" aria-label="Minimum relevance score">
+                                <option value="0">All relevance</option>
+                                <option value="25" selected>Relevance 25+</option>
+                                <option value="50">Relevance 50+</option>
+                                <option value="75">Relevance 75+</option>
+                            </select>
+                            <span class="relevance-dropdown-arrow" aria-hidden="true">▾</span>
+                        </div>
                         <div class="sort-dropdown-wrapper">
                             <button type="button" id="resultsSortDropdownBtn" class="sort-dropdown-btn">Sort ▾</button>
                             <div id="resultsSortDropdownMenu" class="sort-dropdown-menu" style="display: none;">
