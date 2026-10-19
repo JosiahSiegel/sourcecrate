@@ -8,7 +8,7 @@ import { isValidUrl, isValidPdfUrl, isKnownBrokenUrl, getFullDoiUrl, normalizeDo
  */
 function getBestAccessUrl(paper, link) {
     // Check if PDF URL exists and is valid
-    if (link.has_pdf && link.pdf_url && isValidUrl(link.pdf_url)) {
+    if (link.has_pdf && isValidPdfUrl(link.pdf_url)) {
         // Check for known broken patterns
         if (isKnownBrokenUrl(link.pdf_url)) {
             // URL is known to be broken - use DOI fallback if available
@@ -30,7 +30,8 @@ function getBestAccessUrl(paper, link) {
         return {
             type: 'pdf',
             url: link.pdf_url,
-            label: `Download PDF (${link.source})`,
+            label: `PDF link (${link.source})`,
+            verification: 'unverified',
             source: link.source,
             citation_count: link.citation_count || 0,
             is_fallback: false
@@ -82,7 +83,8 @@ export function getAccessLinks(paper) {
             pdfs.push({
                 type: 'pdf',
                 url: pdfUrl,
-                label: `Download PDF (${paper.source || 'Unknown'})`,
+                label: `PDF link (${paper.source || 'Unknown'})`,
+                verification: 'unverified',
                 source: paper.source || 'Unknown'
             });
         }

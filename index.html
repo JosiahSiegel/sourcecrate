@@ -59,7 +59,7 @@
                     </div>
                     <div class="form-group">
                         <input type="checkbox" id="pdfOnly">
-                        <label for="pdfOnly">Only Direct Download</label>
+                        <label for="pdfOnly">Only PDF links</label>
                     </div>
                     <div class="search-actions">
                         <button type="submit" class="btn btn-primary">Search</button>
@@ -89,6 +89,12 @@
                             placeholder="Filter results..."
                             autocomplete="off"
                         >
+                        <select id="resultsRelevanceFilter" class="search-minimal" aria-label="Minimum relevance score">
+                            <option value="0">All relevance</option>
+                            <option value="25" selected>Relevance 25+</option>
+                            <option value="50">Relevance 50+</option>
+                            <option value="75">Relevance 75+</option>
+                        </select>
                         <div class="sort-dropdown-wrapper">
                             <button type="button" id="resultsSortDropdownBtn" class="sort-dropdown-btn">Sort ▾</button>
                             <div id="resultsSortDropdownMenu" class="sort-dropdown-menu" style="display: none;">

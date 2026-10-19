@@ -95,6 +95,12 @@ section {
     margin: 0.5rem 0 0;
 }
 
+.results-summary .relevance-filter-note {
+    flex-basis: 100%;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
 .results-summary-complete {
     border-left-color: var(--success-color);
 }

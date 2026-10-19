@@ -92,7 +92,7 @@ test('title-author matches rank first and result headers open their first access
     await page.keyboard.press('Escape');
     await page.click('#searchForm button[type="submit"]');
     await expect(page.locator('#results-summary')).toContainText('Search complete');
-    await expect(page.locator('.paper-card')).toHaveCount(3);
+    await expect(page.locator('.paper-card')).toHaveCount(2);
     const first = page.locator('.paper-card').first();
     await expect(first).toHaveAttribute('data-paper-key', 'doi:10.1234/exact');
     const title = first.locator('h3 a');
@@ -117,7 +117,7 @@ test('title-author matches rank first and result headers open their first access
     await expect(first.locator('h3 a')).toHaveAttribute('href', destination);
 });
 
-test('low-scoring results survive scrolling and late search completion', async ({ page }) => {
+test('visible relevance filter stays consistent through scrolling, completion and cached searches', async ({ page }) => {
     let finishLastSource;
     const lastSource = new Promise(resolve => { finishLastSource = resolve; });
     await page.route('**/*', async route => {
@@ -128,7 +128,7 @@ test('low-scoring results survive scrolling and late search completion', async (
         const url = route.request().url();
         if (url.includes('zenodo.org')) await lastSource;
         const body = url.includes('api.crossref.org') ? { message: { items: [
-            { title: ['A short note'], DOI: '10.1234/retained-one' },
+            { title: ['Game Programming Patterns'], author: [{ given: 'Robert', family: 'Nystrom' }], DOI: '10.1234/retained-one' },
             { title: ['An unrelated study'], DOI: '10.1234/retained-two' }
         ] } } : {};
         await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
@@ -138,18 +138,26 @@ test('low-scoring results survive scrolling and late search completion', async (
     await page.keyboard.press('Escape');
     await page.click('#searchForm button[type="submit"]');
     try {
-        await expect(page.locator('.paper-card')).toHaveCount(2);
+        await expect(page.locator('.paper-card')).toHaveCount(1);
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
         await page.evaluate(() => window.scrollTo(0, 0));
     } finally {
         finishLastSource();
     }
     await expect(page.locator('#results-summary')).toContainText('Search complete');
+    await expect(page.locator('.paper-card')).toHaveCount(1);
+    await expect(page.locator('#results-summary')).toContainText('1 paper');
+    await expect(page.locator('#resultsRelevanceFilter')).toHaveValue('25');
+    await expect(page.locator('#results-summary')).toContainText('Minimum relevance: 25');
+    await page.selectOption('#resultsRelevanceFilter', '0');
     await expect(page.locator('.paper-card')).toHaveCount(2);
-    await expect(page.locator('#results-summary')).toContainText('2 papers');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(page.locator('.paper-card')).toHaveCount(2);
     // Repeating the query exercises the completed-result cache as well.
     await page.click('#searchForm button[type="submit"]');
-    await expect(page.locator('.paper-card')).toHaveCount(2);
+    await expect(page.locator('#resultsRelevanceFilter')).toHaveValue('25');
+    await expect(page.locator('.paper-card')).toHaveCount(1);
 });
 
 test('paper metadata stays inert and filters reconcile the rendered results', async ({ page }, testInfo) => {
@@ -174,7 +182,7 @@ test('paper metadata stays inert and filters reconcile the rendered results', as
         document.querySelector('.results-section').classList.add('active');
         renderStreamingResults();
     });
-    await expect(page.locator('.paper-card')).toHaveCount(2);
+    await expect(page.locator('.paper-card')).toHaveCount(1);
     await expect(page.locator('.paper-card img')).toHaveCount(0);
     expect(await page.evaluate(() => window.injected)).toBeUndefined();
     expect(await page.locator('.paper-card h3').first().evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);

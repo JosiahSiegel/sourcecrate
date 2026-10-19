@@ -189,8 +189,14 @@
 
 .results-controls-row .controls-inline {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
+}
+
+#resultsRelevanceFilter option {
+    background: var(--surface-color);
+    color: var(--text-color);
 }
 
 @media (max-width: 768px) {

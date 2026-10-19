@@ -71,7 +71,8 @@ export class FuzzyMatcher {
  */
 const STOPWORDS = new Set([
     'the', 'and', 'for', 'that', 'this', 'with', 'from', 'was', 'are',
-    'been', 'have', 'has', 'will', 'would', 'can', 'but', 'not', 'all', 'what', 'which'
+    'been', 'have', 'has', 'will', 'would', 'can', 'but', 'not', 'all', 'what', 'which',
+    'of', 'to', 'in', 'on', 'at', 'by', 'as', 'an', 'is', 'it', 'be', 'or', 'if', 'we'
 ]);
 
 /**
@@ -161,7 +162,7 @@ function tokenize(text, useStemming = true, filterStopwords = true) {
         .replace(/\p{M}/gu, '')
         .replace(/[^\p{L}\p{N}]+/gu, ' ')
         .split(/\s+/)
-        .filter(w => w.length > 2);  // Remove very short words
+        .filter(w => w.length >= 2); // Preserve AI, UI, VR, 2D, 3D and short author names.
 
     let processed = tokens;
 

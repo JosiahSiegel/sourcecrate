@@ -62,7 +62,12 @@ export class OpenAlexClient extends BaseAPIClient {
                 const doi = item.doi?.replace('https://doi.org/', '');
 
                 // PDF URL
-                const pdfUrl = item.open_access?.oa_url || item.primary_location?.pdf_url;
+                // oa_url may be an HTML landing page. Only location.pdf_url
+                // identifies a provider-declared PDF (still unverified until fetched).
+                const pdfUrl = item.best_oa_location?.pdf_url || item.primary_location?.pdf_url ||
+                    item.locations?.find(location => location.is_oa && location.pdf_url)?.pdf_url || null;
+                const pageUrl = item.best_oa_location?.landing_page_url || item.open_access?.oa_url ||
+                    item.primary_location?.landing_page_url || item.doi || item.id;
 
                 // Journal
                 const journal = item.primary_location?.source?.display_name;
@@ -73,7 +78,7 @@ export class OpenAlexClient extends BaseAPIClient {
                     abstract: item.abstract_inverted_index ? this.reconstructAbstract(item.abstract_inverted_index) : null,
                     year,
                     doi,
-                    url: item.id,
+                    url: pageUrl,
                     pdf_url: pdfUrl,
                     open_access_pdf: pdfUrl,
                     source: 'OpenAlex',
@@ -101,7 +106,7 @@ export class OpenAlexClient extends BaseAPIClient {
                     words[pos] = word;
                 });
             }
-            return words.filter(Boolean).join(' ').substring(0, 500); // Limit to 500 chars
+            return words.filter(Boolean).join(' ');
         } catch {
             return null;
         }

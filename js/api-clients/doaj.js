@@ -62,7 +62,7 @@ export class DOAJClient extends BaseAPIClient {
 
                 // PDF URL - check links for PDF
                 const pdfLink = bibjson.link?.find(link =>
-                    link.type === 'fulltext' || link.content_type === 'PDF'
+                    ['pdf', 'application/pdf'].includes(String(link.content_type || '').toLowerCase())
                 );
 
                 return {

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { BM25Scorer } from '../../js/processing-poc.js';
+import noise from '../fixtures/relevance-noise.json';
 
 const query = 'game programming patterns Robert Nystrom';
 const exact = { title: 'Game Programming Patterns', authors: ['Robert Nystrom'] };
@@ -11,6 +12,18 @@ function rank(papers, search = query) {
 }
 
 describe('title and author ranking', () => {
+    it.each(noise)('keeps the reported unrelated result below the default cutoff: $paper.title', ({ query, paper }) => {
+        expect(rank([paper], query)[0].score).toBeLessThan(25);
+    });
+    it('preserves short technical terms and names without treating common prepositions as evidence', () => {
+        for (const term of ['AI', '2D', '3D', 'UI', 'VR', 'Li']) {
+            const ranked = rank([{ title: 'Unrelated research' }, { title: term }], term);
+            expect(ranked[0].title).toBe(term);
+            expect(ranked[0].score).toBeGreaterThan(25);
+            expect(ranked[1].score).toBe(0);
+        }
+        expect(rank([{ title: 'On the architecture of AI' }], 'AI')[0].score).toBeGreaterThan(25);
+    });
     it('puts a complete title and author ahead of partial, author-only and abstract matches', () => {
         const ranked = rank([
             { title: 'Numerical methods', authors: ['Robert Nystrom'], abstract: query },

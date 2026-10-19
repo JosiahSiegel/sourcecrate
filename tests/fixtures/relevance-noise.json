@@ -1,0 +1,59 @@
+[
+  {
+    "query": "game design mechanics dynamics aesthetics player experience",
+    "paper": {
+      "title": "Noisy three-player dilemma game: Robustness of the quantum advantage",
+      "authors": [
+        "Pranav Kairon",
+        "Kishore Thapliyal",
+        "R. Srikanth",
+        "Anirban Pathak"
+      ],
+      "abstract": "Games involving quantum strategies often yield higher payoff. Here, we study a practical realization of the three-player dilemma game using the superconductivity-based quantum processors provided by IBM Q Experience. We analyze the persistence of the quantum advantage under corruption of the input states and how this depends on parameters of the payoff table. Specifically, experimental fidelity and error are observed not to be properly anti correlated, i.e., there are instances where a class of ",
+      "source": "arXiv"
+    }
+  },
+  {
+    "query": "game design mechanics dynamics aesthetics player experience",
+    "paper": {
+      "title": "Electromagnetism of Hamzah : A Rewriting of Classical Laws from Force to Algorithmic Traffic",
+      "authors": [
+        "HAMZAH, SEYED RASOUL"
+      ],
+      "abstract": " \n\n\n\n\n\n\n\n\n\n\nThe Coding of the Universe in Hamzah Electrodynamics\n\n\n\n\nElectromagnetism: From Force to Algorithm\n\n\n\n\nThe End of Lorentz: Hamzah Processing\n\n\n\n\nA Digital Rewriting of the Classical Laws of Electromagnetism\n\n\n\n\nThe Collapse of Lorentz within the Hamzah Tensor\n\n\n\n\nClassical Electromagnetism or Data Traffic?\n\n\n\nElectromagnetic Information Density & Metric Coding Architecture\n\nThe Sovereign Genesis Lagrangian\n\nInformation-Density Electromagnetism and Metric Encoding Architecture with Di",
+      "source": "DataCite"
+    }
+  },
+  {
+    "query": "game character design personality animation believability",
+    "paper": {
+      "title": "Optimal strategies for a game on amenable semigroups",
+      "authors": [
+        "Valerio Capraro",
+        "Kent Morrison"
+      ],
+      "abstract": "The semigroup game is a two-person zero-sum game defined on a semigroup S as follows: Players 1 and 2 choose elements x and y in S, respectively, and player 1 receives a payoff f(xy) defined by a function f from S to [-1,1]. If the semigroup is amenable in the sense of Day and von Neumann, one can extend the set of classical strategies, namely countably additive probability measures on S, to include some finitely additive measures in a natural way. This extended game has a value and the players ",
+      "source": "arXiv"
+    }
+  },
+  {
+    "query": "procedural content generation level design survey",
+    "paper": {
+      "title": "Corporate Strategic and Operational Controls",
+      "authors": [],
+      "source": "Open Library",
+      "abstract": ""
+    }
+  },
+  {
+    "query": "game character design personality animation believability",
+    "paper": {
+      "title": "The Story of The Committee of 300",
+      "authors": [
+        "John Coleman"
+      ],
+      "source": "Open Library",
+      "abstract": ""
+    }
+  }
+]

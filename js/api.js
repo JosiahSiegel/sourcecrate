@@ -59,6 +59,8 @@ function getSearchCacheKey(query, limit, pdfOnly) {
 export async function searchWithClient(query, limit, pdfOnly = false, minRelevance = DEFAULT_RELEVANCE_THRESHOLD, renderCallback = () => {}) {
     if (typeof renderCallback !== "function") renderCallback = () => {};
     const cacheKey = getSearchCacheKey(query, limit, pdfOnly);
+    const relevanceSelect = document.getElementById('resultsRelevanceFilter');
+    if (relevanceSelect) relevanceSelect.value = String(minRelevance);
     const now = Date.now();
     if (cacheKey === lastSearchKey && activeSearch && !activeSearch.done && activeSearch.minRelevance === minRelevance && now - lastSearchTime < DEBOUNCE_MS) return;
     activeSearch?.controller.abort();
@@ -124,7 +126,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
     // Show results section
     document.querySelector('.results-section').classList.add('active');
 
-    const filterText = pdfOnly ? ' (Direct Download only)' : '';
+    const filterText = pdfOnly ? ' (PDF links only)' : '';
     updateLiveRegion(`Searching for "${query}"${filterText}...`);
 
     try {
@@ -132,6 +134,8 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         // Filter out semanticscholar: CORS not supported for browser access
         await searchPapers(query, {
             limit,
+            // Keep the full ranked set for instant, reversible local filter changes.
+            minRelevance: 0,
             signal: session.controller.signal,
 
             onSourceStart: (data) => {

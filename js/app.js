@@ -8,7 +8,8 @@ import {
     papersByKey,
     pdfOnlyFilter,
     renderedPaperKeys,
-    setPdfOnlyFilter
+    setPdfOnlyFilter,
+    setRelevanceThreshold
 } from './state.js';
 import { searchWithClient, searchByTitle as apiSearchByTitle } from './api.js';
 import { renderStreamingResults, buildPaperCard } from './rendering.js';
@@ -455,6 +456,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Results search input - real-time filtering
+    document.getElementById('resultsRelevanceFilter').addEventListener('change', (e) => {
+        setRelevanceThreshold(Number(e.target.value));
+        renderStreamingResults(currentSearchFilterQuery, currentSearchSortOrder);
+    });
+
     document.getElementById('resultsSearchInput').addEventListener('input', (e) => {
         currentSearchFilterQuery = e.target.value;
         // Only render if we have papers (prevents interference during search initialization)

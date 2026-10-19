@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { addToHistory, getSearchHistory } from '../../js/history.js';
 
 describe('search history relevance settings', () => {
-    it('does not restore the removed hidden relevance cutoff', () => {
+    it('uses the visible default cutoff and allows explicitly including all results', () => {
         addToHistory('game programming patterns Robert Nystrom', 94);
-        expect(getSearchHistory()[0].filters.relevanceThreshold).toBe(0);
+        expect(getSearchHistory()[0].filters.relevanceThreshold).toBe(25);
         addToHistory('game programming patterns Robert Nystrom', 94, { relevanceThreshold: 0 });
         const history = getSearchHistory();
         expect(history).toHaveLength(1);

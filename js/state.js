@@ -1,3 +1,4 @@
+import { DEFAULT_MIN_RELEVANCE } from './search-core.js';
 // ============================================================================
 // STATE.JS - Global state management and localStorage utilities
 // ============================================================================
@@ -119,8 +120,8 @@ export let sourcesCompleted = 0;
 export let totalSources = 0;
 export let sourceNotices = [];
 export let pdfOnlyFilter = false;
-// Ranking orders results; only an explicitly requested filter should hide them.
-export const DEFAULT_RELEVANCE_THRESHOLD = 0;
+// Visible, reversible default shared with MCP. Selecting All relevance uses zero.
+export const DEFAULT_RELEVANCE_THRESHOLD = DEFAULT_MIN_RELEVANCE;
 export let relevanceThreshold = DEFAULT_RELEVANCE_THRESHOLD;
 export let currentQuery = ''; // Store current search query for title matching
 export let renderedPaperKeys = new Set(); // Track which papers are already rendered

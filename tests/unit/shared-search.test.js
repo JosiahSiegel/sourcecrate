@@ -9,6 +9,30 @@ const query = 'game programming patterns Robert Nystrom';
 const exact = { title: 'Game Programming Patterns', authors: ['Robert Nystrom'], doi: '10.1234/book', source: 'CrossRef', url: 'https://example.org/book' };
 
 describe('shared website and agent search', () => {
+    it('filters weak matches consistently in snapshots and final results, with an explicit opt-out and final cap', async () => {
+        const candidates = [exact, { title: 'Game Programming Patterns', authors: ['Other Writer'] },
+            { title: 'The Story of The Committee of 300' }];
+        vi.spyOn(ClientSearchOrchestrator.prototype, 'searchWithCallbacks').mockImplementation(async (_, options) => {
+            options.onResults({ source: 'crossref', papers: candidates });
+            return { total_results: candidates.length };
+        });
+        let snapshot;
+        const filtered = await searchPapers(query, { onResults: data => { snapshot = data.papers; } });
+        expect(filtered.papers).toEqual(snapshot);
+        expect(filtered.papers).toHaveLength(2);
+        expect(filtered.filtered_out).toBe(1);
+        expect(filtered.filters.min_relevance).toBe(25);
+        const all = await searchPapers(query, { minRelevance: 0 });
+        expect(all.papers).toHaveLength(3);
+        const capped = await searchPapers(query, { maxResults: 1 });
+        expect(capped.papers[0].title).toBe(exact.title);
+        expect(capped.total_matching).toBe(2);
+        expect(capped.total_ranked).toBe(3);
+        expect(capped.total_results).toBe(1);
+        expect(capped.truncated).toBe(true);
+        for (const minRelevance of [-1, 101, NaN]) await expect(searchPapers(query, { minRelevance })).rejects.toThrow('Minimum relevance');
+        for (const maxResults of [0, 1001, 1.5]) await expect(searchPapers(query, { maxResults })).rejects.toThrow('Maximum results');
+    });
     it('retains same-title works by different authors, including distinct UI identities', () => {
         const papers = [{ title: exact.title, authors: ['Other Writer'] },
             { title: exact.title, authors: exact.authors }];

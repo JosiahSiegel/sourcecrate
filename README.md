@@ -6,7 +6,7 @@ Academic paper search that runs entirely in your browser. No backend needed.
 
 Searches academic databases in parallel. Everything happens client-side - the deduplication, BM25 relevance scoring, all of it.
 
-Relevance ranking favors title phrases and combined title-and-author matches, with whole-word matching that ignores capitalization and accents. Results remain visible even when their relevance score is low. Click a result title to open its first available access link (PDF, publisher page, or DOI); the magnifying glass searches for that title.
+Relevance ranking favors title phrases and combined title-and-author matches, with whole-word matching that ignores capitalization and accents. The site and MCP default to a minimum lexical relevance score of 25/100. Choose **All relevance** on the site or `min_relevance: 0` in the MCP to include weak matches. The filter applies consistently during loading and after completion; scores are not confidence probabilities. Short technical terms such as AI, 2D and 3D are retained. Click a result title to open its first available access link (PDF, publisher page, or DOI); the magnifying glass searches for that title.
 
 ## Usage
 
@@ -37,6 +37,8 @@ For Git Bash/Linux/macOS users who prefer a custom port:
 ```bash
 node dev-server.js 3001
 ```
+
+PDF links are provider-declared candidates, not verified downloads. OpenAlex landing pages and DOAJ HTML full text stay page links. MCP downloads validate actual PDF contents and report evidence; a valid PDF still needs review to confirm it is the requested work. Use regular web research for product documentation and practical guidance.
 
 ## Deployment and MCP
 

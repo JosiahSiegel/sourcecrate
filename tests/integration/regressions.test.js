@@ -75,7 +75,7 @@ it('ignores late callbacks from a previous query and keeps cache copies separate
 it('removes filtered cards, updates merged metadata, and retains unchanged cards', () => {
     for (const paper of contract.filter_cases) state.papersByKey.set(getPaperKey(paper), {...paper});
     renderStreamingResults();
-    expect(document.querySelectorAll('.paper-card')).toHaveLength(2);
+    expect(document.querySelectorAll('.paper-card')).toHaveLength(1);
     state.setBm25ScoringComplete(true);
     renderStreamingResults();
     expect(document.querySelectorAll('.paper-card')).toHaveLength(1);

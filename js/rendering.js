@@ -49,6 +49,7 @@ function buildSourceLinks(paper) {
                target="_blank"
                rel="noopener noreferrer"
                class="btn btn-primary btn-pdf-download"
+               title="Provider-supplied PDF link; file contents have not been verified"
                data-pdf-url="${escapeHtml(primaryPdf.url)}"
                onclick="window.trackDownloadAttempt(this.dataset.pdfUrl, this.id); return true;">
                <span class="pdf-icon">📄</span> ${escapeHtml(primaryPdf.label)}
@@ -434,7 +435,7 @@ export function updateCitationBadge(paperKey, citationCount) {
  * @param {number} effectiveThreshold - Requested relevance threshold
  */
 export function updateResultsSummary(count, searchComplete, effectiveThreshold = relevanceThreshold) {
-    const pdfInfo = pdfOnlyFilter ? ` with direct download` : '';
+    const pdfInfo = pdfOnlyFilter ? ` with PDF links` : '';
     const isLoading = totalSources > 0 && sourcesCompleted < totalSources;
     const isComplete = totalSources > 0 && sourcesCompleted === totalSources;
 
@@ -458,6 +459,9 @@ export function updateResultsSummary(count, searchComplete, effectiveThreshold =
             `<li>${escapeHtml(notice.source)}: ${escapeHtml(notice.message)}</li>`).join('')}</ul></details>`;
     }
 
+    if (effectiveThreshold > 0) {
+        summaryHtml += `<p class="relevance-filter-note">Minimum relevance: ${effectiveThreshold}/100. Choose All relevance to include weaker matches.</p>`;
+    }
     let summaryDiv = document.getElementById('results-summary');
 
     if (!summaryDiv) {
@@ -490,8 +494,8 @@ export function getFilteredAndSortedResults(filterQuery = '', sortOrder = 'relev
     }
 
     // Apply filters and sort
-    // Use bm25ScoringComplete for relevance filter to avoid filtering on heuristic scores
-    let filteredResults = applyFilters(allPapers, pdfOnlyFilter, relevanceThreshold, bm25ScoringComplete);
+    // Every shared-engine snapshot is ranked; apply the same cutoff while loading and after completion.
+    let filteredResults = applyFilters(allPapers, pdfOnlyFilter, relevanceThreshold, true);
 
     // Apply text filter if provided
     if (filterQuery && filterQuery.trim() !== '') {
