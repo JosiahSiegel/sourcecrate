@@ -1,29 +1,6 @@
-// ============================================================================
-// PROCESSING-POC.JS - Client-Side Result Processing (Enhanced with IDF)
-// ============================================================================
-// This demonstrates moving server-side processing to the browser:
-// - Paper deduplication with fuzzy matching
-// - BM25 relevance scoring with proper IDF calculation
-// - Stemming and stopword filtering
-// - Field-weighted scoring (title 3x > abstract > authors > journal)
-// - Result merging
-//
-// IMPROVEMENTS TO REDUCE FALSE POSITIVES:
-// 1. IDF (Inverse Document Frequency) - Penalizes common terms, boosts rare terms
-// 2. Stemming - Matches word variants (optimize/optimizing/optimization)
-// 3. Stopwords - Filters noise words (the, and, of, etc.)
-// 4. Field weighting - Title matches weighted 3x higher than abstract
-// 5. Better tokenization - Handles hyphens, punctuation properly
-// 6. UNIVERSAL TITLE BOOSTING - Exact/partial query matches in title get massive boost
-// 7. GENERAL PHRASE DETECTION - Any multi-word query treated as potential phrase (topic-agnostic)
-// 8. AUTHOR FIELD DISABLED - Prevents false positives from surname matches
-//
-// DESIGN PRINCIPLE: All ranking logic is UNIVERSAL and topic-agnostic
-// No hardcoded patterns for specific domains (food, ships, people, etc.)
-// Works identically for ANY query type: scientific, culinary, historical, geographic, etc.
-//
-// Benefits: Reduces server CPU by ~30%, memory by ~15%, improves relevance accuracy
-// Cost: ~15KB JavaScript (gzipped: ~5KB)
+// Client-side deduplication and relevance ranking.
+// Rank title/author coverage and phrases first; BM25 breaks close matches.
+// Scores are percentages used for ordering, not confidence probabilities.
 
 /**
  * Simple fuzzy string matching for paper deduplication
@@ -179,8 +156,10 @@ function tokenize(text, useStemming = true, filterStopwords = true) {
     if (!text) return [];
 
     const tokens = text
+        .normalize('NFKD')
         .toLowerCase()
-        .replace(/[^\w\s-]/g, ' ')  // Keep hyphens, remove other punctuation
+        .replace(/\p{M}/gu, '')
+        .replace(/[^\p{L}\p{N}]+/gu, ' ')
         .split(/\s+/)
         .filter(w => w.length > 2);  // Remove very short words
 
@@ -263,7 +242,7 @@ export class BM25Scorer {
 
         // Robertson-Zaragoza IDF formula (BM25 standard)
         // Handles edge cases better than simplified formula
-        // More accurate for rare terms (df=1) and common terms (df≈N)
+        // More accurate for rare terms (df=1) and common terms (df close to N)
         const N = this.totalDocs;
         const rawIDF = Math.log((N - df + 0.5) / (df + 0.5));
 
@@ -274,196 +253,68 @@ export class BM25Scorer {
     }
 
     /**
-     * Calculate BM25 score for a paper given a query with UNIVERSAL title boosting
-     *
-     * UNIVERSAL PRINCIPLES APPLIED:
-     * 1. Title matches >> Abstract matches (works for ANY query type)
-     * 2. Exact phrase in title >> Partial matches (topic-agnostic)
-     * 3. All query words in title >> Some words (coverage-based, not topic-specific)
-     * 4. Author field disabled (prevents surname false positives for ANY query)
-     *
-     * NO HARDCODED PATTERNS: This works identically for scientific, culinary, historical,
-     * geographic, or any other query type. No special cases for specific domains.
-     *
-     * Can be called incrementally during streaming as corpus grows
-     *
-     * @param {Object} paper - Paper object
-     * @param {string} query - Search query
-     * @param {number} avgLength - Average document length in corpus (optional, defaults to 100)
-     * @returns {number} Normalized score in 0-100 range
+     * Score whole-word matches across title, authors and abstract (0–100).
+     * Matching more of the query in the title/author fields outweighs rare
+     * abstract terms. BM25 provides a small corpus-aware tie breaker.
      */
     score(paper, query, avgLength = 100) {
-        // Tokenize query with same processing as documents
-        const queryTerms = tokenize(query);
+        const queryWords = [...new Set(tokenize(query, false))];
+        if (!queryWords.length) return 50;
+        const queryTerms = queryWords.map(enhancedStem);
+        const titleTokens = tokenize(paper.title);
+        const titleTerms = new Set(titleTokens);
+        const abstractTerms = new Set(tokenize(paper.abstract));
+        const authors = Array.isArray(paper.authors) ? paper.authors : [paper.authors];
+        // Names are not stemmed: similar surnames should not become identical.
+        const authorTerms = new Set(tokenize(authors.map(author =>
+            typeof author === 'string' ? author : author?.name || ''
+        ).join(' '), false));
 
-        if (queryTerms.length === 0) return 50; // Default score for empty query
+        const inTitle = queryTerms.map(term => titleTerms.has(term));
+        const inAuthor = queryWords.map(word => authorTerms.has(word));
+        const titleCount = inTitle.filter(Boolean).length;
+        const authorCount = inAuthor.filter((match, i) => match && !inTitle[i]).length;
+        const abstractCount = queryTerms.filter((term, i) =>
+            !inTitle[i] && !inAuthor[i] && abstractTerms.has(term)
+        ).length;
+        const titleCoverage = titleCount / queryTerms.length;
+        const titlePrecision = titleTerms.size ?
+            new Set(queryTerms.filter((_, i) => inTitle[i])).size / titleTerms.size : 0;
 
-        // Get paper text with field weighting and tokenize
-        const paperText = this.getPaperText(paper);
-        const paperTokens = tokenize(paperText);
-        const docLength = paperTokens.length;
+        // Authors complement title matches without letting an incidental surname
+        // outrank a title match. Count each query word in its strongest field.
+        let score = 65 * (titleCount + 0.65 * authorCount + 0.25 * abstractCount) / queryTerms.length;
+        score += 15 * titleCoverage * titlePrecision;
 
-        // UNIVERSAL: Detect capitalized words in query for term weighting
-        // Capitalized words (proper nouns/entities) are typically more specific across ALL domains
-        // Works for: "Titanic", "Einstein", "Candy", "Climate", any capitalized term
-        const queryWords = query.split(/\s+/);
-        const capitalizedTerms = new Set(
-            queryWords.filter(word => word.length > 2 && /^[A-Z]/.test(word))
-                .map(word => enhancedStem(word.toLowerCase()))
-        );
-
-        let score = 0;
-        let matchedTerms = 0;
-
-        for (const term of queryTerms) {
-            const termFreq = this.countTerm(paperTokens, term);
-
-            if (termFreq === 0) continue;
-
-            matchedTerms++;
-
-            // TF component (same as before)
-            const tfComponent = (termFreq * (this.k1 + 1)) /
-                (termFreq + this.k1 * (1 - this.b + this.b * (docLength / avgLength)));
-
-            // IDF component - penalizes common terms
-            const idf = this.calculateIDF(term);
-
-            // UNIVERSAL: Capitalized terms weighted 2.0x higher (more specific/important)
-            // This is topic-agnostic: works for people, places, brands, scientific terms, anything
-            const termWeight = capitalizedTerms.has(term) ? 2.0 : 1.0;
-
-            // BM25 score = TF * IDF * term weight
-            score += tfComponent * idf * termWeight;
+        // Recognize a title phrase even when the query also includes its author,
+        // in either order. Preserve repeated words when checking the phrase.
+        const titleQuery = tokenize(query, false)
+            .filter(word => titleTerms.has(enhancedStem(word)) || !authorTerms.has(word))
+            .map(enhancedStem);
+        const containsPhrase = (tokens, phrase) => phrase.length > 0 &&
+            tokens.some((_, i) => phrase.every((term, j) => tokens[i + j] === term));
+        if (containsPhrase(titleTokens, titleQuery)) score += 10 * titleCoverage;
+        if (titleCount > 0 && authorCount > 0 && titleCount + authorCount === queryTerms.length) {
+            score += 5;
         }
 
-        // Normalize to 0-100 range with FIXED scale for consistent scoring during streaming
-        // Use fixed maxIDF assuming ~200 doc corpus (log(200/0.5) ≈ 6.0 for Robertson-Zaragoza)
-        // This ensures early papers (N=20) and late papers (N=100) have comparable scores
-        const maxIDF = Math.log((200 - 0.5) / 0.5); // ~6.0 for Robertson-Zaragoza
-        const maxTermWeight = 2.0; // Account for proper noun weighting
-        const theoreticalMax = queryTerms.length * (this.k1 + 1) * maxIDF * maxTermWeight;
-
-        // Normalize base BM25 score
-        // Clamp to 0-100 range (negative scores indicate poor matches)
-        let normalizedScore = theoreticalMax > 0
-            ? Math.max(0, Math.min(100, (score / theoreticalMax) * 100))
-            : 50;
-
-        // Apply boosts AFTER normalization (additive, not multiplicative)
-        // This prevents negative score issues and provides consistent boost behavior
-
-        // UNIVERSAL PRINCIPLE #1: Title Matches >> Abstract Matches
-        // Papers with query terms in TITLE should always rank higher than those with terms only in abstract
-        // This works for ANY query type: "Candy Corn", "Climate Change", "Albert Einstein", etc.
-
-        const titleLower = (paper.title || '').toLowerCase();
-        const abstractLower = (paper.abstract || '').toLowerCase();
-        const queryLower = query.toLowerCase().replace(/['"]/g, '').trim();
-
-        // UNIVERSAL PRINCIPLE #2: Exact Phrase Match in Title (ANY query)
-        // Check if entire query appears exactly in title (case-insensitive)
-        // Works for: "candy corn", "climate change", "rms titanic", "neural networks", anything
-        if (titleLower.includes(queryLower)) {
-            // Complete query match in title: +100 boost (guarantee top rank)
-            normalizedScore = Math.min(100, normalizedScore + 100);
-        } else {
-            // UNIVERSAL PRINCIPLE #3: Partial Query Coverage in Title
-            // Check what percentage of query words appear in title
-            // Works for ANY multi-word query regardless of topic
-
-            const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
-            const wordsInTitle = queryWords.filter(word => titleLower.includes(word));
-            const titleCoverage = queryWords.length > 0 ? wordsInTitle.length / queryWords.length : 0;
-
-            if (titleCoverage >= 1.0) {
-                // ALL query words in title (but not as exact phrase): +80 boost
-                normalizedScore = Math.min(100, normalizedScore + 80);
-            } else if (titleCoverage >= 0.75) {
-                // 75%+ of query words in title: +50 boost
-                normalizedScore = Math.min(100, normalizedScore + 50);
-            } else if (titleCoverage >= 0.5) {
-                // 50%+ of query words in title: +30 boost
-                normalizedScore = Math.min(100, normalizedScore + 30);
-            } else if (titleCoverage > 0) {
-                // At least some query words in title: +15 boost
-                normalizedScore = Math.min(100, normalizedScore + 15);
-            }
+        const paperTokens = tokenize(this.getPaperText(paper));
+        let bm25 = 0;
+        for (const term of new Set(queryTerms)) {
+            const frequency = this.countTerm(paperTokens, term);
+            if (!frequency) continue;
+            const tf = frequency * (this.k1 + 1) /
+                (frequency + this.k1 * (1 - this.b + this.b * paperTokens.length / Math.max(1, avgLength)));
+            bm25 += tf * this.calculateIDF(term);
         }
+        score += 5 * bm25 / (bm25 + queryTerms.length);
 
-        // UNIVERSAL PRINCIPLE #4: Exact Phrase Match in Abstract (fallback)
-        // If query phrase appears in abstract (but not title), give smaller boost
-        // This ensures papers with abstract matches rank lower than title matches
-        if (!titleLower.includes(queryLower) && abstractLower.includes(queryLower)) {
-            // Complete query in abstract only: +40 boost (good, but less than title)
-            normalizedScore = Math.min(100, normalizedScore + 40);
+        // A small recency preference only when explicitly requested.
+        if (/\b(recent|latest|new|current)\b/i.test(query) && paper.year) {
+            const age = new Date().getFullYear() - Number(paper.year);
+            if (age >= 0 && age < 2) score += 2 * (1 - age / 2);
         }
-
-        // LEGACY SUPPORT: Handle explicit quoted phrases (e.g., "machine learning")
-        // This is an additional layer for users who explicitly quote phrases
-        const explicitPhrases = query.match(/"([^"]+)"/gi);
-        if (explicitPhrases && explicitPhrases.length > 0) {
-            for (const phrase of explicitPhrases) {
-                const cleanPhrase = phrase.replace(/"/g, '').toLowerCase().trim();
-                if (cleanPhrase && titleLower.includes(cleanPhrase)) {
-                    // Explicit quoted phrase in title: already boosted above
-                    // No additional boost needed (avoid double-counting)
-                    break;
-                }
-            }
-        }
-
-        // Recency boost: +20 points for recent papers on time-sensitive queries
-        // Detect time-sensitive keywords in query
-        const timeSensitive = /\b(recent|latest|new|2024|2025|current)\b/i.test(query);
-        if (timeSensitive && paper.year) {
-            const currentYear = new Date().getFullYear();
-            const yearsOld = currentYear - paper.year;
-
-            // Boost papers <= 1 year old by up to 20 points
-            // Linear decay: 0 years = +20 points, 1 year = 0 points
-            if (yearsOld <= 1 && yearsOld >= 0) {
-                const recencyBoostPoints = 20 * (1 - yearsOld); // 20 points at year 0, 0 points at year 1
-                normalizedScore = Math.min(100, normalizedScore + recencyBoostPoints);
-            }
-        }
-
-        return normalizedScore;
-    }
-
-    /**
-     * UNIVERSAL PHRASE DETECTION - Works for ANY multi-word query
-     *
-     * PRINCIPLE: Any multi-word query is a potential entity/phrase that should be matched exactly.
-     * Examples: "Candy Corn", "Climate Change", "Neural Networks", "Baby Elephant", "RMS Titanic"
-     *
-     * This is topic-agnostic - no hardcoded patterns for specific domains.
-     * Works identically for food, science, history, zoology, any topic.
-     *
-     * @param {string} query - Search query
-     * @returns {string|null} Detected phrase or null
-     */
-    detectPhrases(query) {
-        // Remove quotes from query for processing
-        const cleanQuery = query.replace(/['"]/g, '').trim();
-
-        // Split into words and filter out stopwords and very short words
-        const words = cleanQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-
-        // Single word queries don't need phrase detection
-        if (words.length < 2) {
-            return null;
-        }
-
-        // UNIVERSAL PRINCIPLE: Any multi-word query should be treated as a potential phrase
-        // This works for:
-        // - Food entities: "candy corn", "chocolate bar", "ice cream"
-        // - Scientific terms: "climate change", "neural networks", "quantum mechanics"
-        // - Historical entities: "albert einstein", "world war", "industrial revolution"
-        // - Geographic names: "new york", "san francisco", "south america"
-        // - Any arbitrary multi-word query
-
-        return cleanQuery;
+        return Math.max(0, Math.min(100, score));
     }
 
     /**
@@ -477,8 +328,7 @@ export class BM25Scorer {
         const parts = [];
 
         // Title: 3x weight (most important field)
-        // FIX #4 note: Exact query matches get additional boost via phrase detection
-        // rather than increasing repetition here (keeps corpus stats stable)
+        // Phrase and coverage preferences are applied separately in score().
         const title = paper.title || '';
         for (let i = 0; i < 3; i++) {
             parts.push(title);
@@ -487,21 +337,9 @@ export class BM25Scorer {
         // Abstract: 1x weight
         parts.push(paper.abstract || '');
 
-        // Authors: 0.1x weight (REDUCED from 0.5x to fix false positives from surname matches)
-        // FIX: Prevents papers with query terms as author surnames (e.g., "Patrick Corn")
-        // from outranking papers with query terms in title/abstract
-        // This is critical for entity queries like "Candy Corn" where "Corn" is a common surname
-        const authors = (paper.authors || [])
-            .map(a => typeof a === 'string' ? a : a.name || '')
-            .join(' ');
-        if (authors) {
-            // Reduce author weight by repeating less frequently in text
-            // Don't include authors at all in weighted text to minimize surname pollution
-            // Authors still searchable via direct author search features if needed
-            // parts.push(authors);  // DISABLED to prevent surname false positives
-        }
+        // Authors are scored separately so surname frequency cannot dominate BM25.
 
-        // Journal: 0.3x weight (least important for relevance)
+        // Journal contributes only to the small BM25 tie breaker.
         const journal = paper.journal || '';
         if (journal) {
             parts.push(journal);

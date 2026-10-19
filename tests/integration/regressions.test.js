@@ -19,6 +19,38 @@ beforeEach(() => {
     state.setBm25ScoringComplete(false);
     setupSearchDOM();
 });
+
+describe('result title destinations', () => {
+    const cases = [
+        ['PDF before publisher', { pdf_url: 'https://example.org/paper.pdf', url: 'https://example.org/paper' }, 'https://example.org/paper.pdf'],
+        ['publisher before DOI', { url: 'https://example.org/paper', doi: '10.1234/paper' }, 'https://example.org/paper'],
+        ['DOI fallback', { doi: '10.1234/paper' }, 'https://doi.org/10.1234/paper'],
+        ['merged source order', { _source_links: [
+            { source: 'First', url: 'https://example.org/first', citation_count: 1 },
+            { source: 'Second', url: 'https://example.org/second', citation_count: 10 }
+        ] }, 'https://example.org/second'],
+        ['merged PDF before pages', { _source_links: [
+            { source: 'First', url: 'https://example.org/first' },
+            { source: 'Second', has_pdf: true, pdf_url: 'https://example.org/second.pdf' }
+        ] }, 'https://example.org/second.pdf'],
+        ['unsafe URLs', { url: 'javascript:alert(1)', pdf_url: 'javascript:alert(2)' }, null],
+        ['missing URLs', {}, null]
+    ];
+    for (const [name, fields, expected] of cases) it(name, () => {
+        document.getElementById('results').innerHTML = buildPaperCard({ title: 'A result', ...fields }, 0);
+        const titleLink = document.querySelector('.paper-title-link');
+        if (!expected) {
+            expect(titleLink).toBeNull();
+            expect(document.querySelector('h3').textContent).toContain('A result');
+        } else {
+            expect(titleLink.getAttribute('href')).toBe(expected);
+            expect(titleLink.getAttribute('href')).toBe(document.querySelector('.source-access-container a').getAttribute('href'));
+            expect(titleLink.getAttribute('rel')).toBe('noopener noreferrer');
+            expect(titleLink.textContent).toBe('A result');
+        }
+        expect(document.querySelector('.title-search-icon')).not.toBeNull();
+    });
+});
 afterEach(() => { clearSearchCache(); vi.restoreAllMocks(); });
 
 it('ignores late callbacks from a previous query and keeps cache copies separate', async () => {

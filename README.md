@@ -6,6 +6,8 @@ Academic paper search that runs entirely in your browser. No backend needed.
 
 Searches academic databases in parallel. Everything happens client-side - the deduplication, BM25 relevance scoring, all of it.
 
+Relevance ranking favors title phrases and combined title-and-author matches, with whole-word matching that ignores capitalization and accents. Results remain visible even when their relevance score is low. Click a result title to open its first available access link (PDF, publisher page, or DOI); the magnifying glass searches for that title.
+
 ## Usage
 
 Clone and start the local server (ES modules require HTTP):

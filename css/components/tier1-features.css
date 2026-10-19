@@ -19,6 +19,21 @@
     margin-right: 0.75rem; /* Prevent inline icon from overlapping bookmark button */
 }
 
+.paper-title-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.paper-title-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.paper-title-link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}
+
 /* Mobile - ensure adequate spacing between title and bookmark */
 @media (max-width: 768px) {
     .paper-title-actions h3 {

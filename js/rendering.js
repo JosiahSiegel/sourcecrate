@@ -91,7 +91,7 @@ function getBestAccessUrl(paper, link) {
 /**
  * Build source access links (unified function)
  * @param {Object} paper - Paper object
- * @returns {string} HTML for source links
+ * @returns {{html: string, firstUrl: string|null}} Links and the first displayed destination
  */
 function buildSourceLinks(paper) {
     const sourceLinks = paper._source_links || [];
@@ -194,6 +194,7 @@ function buildSourceLinks(paper) {
         }
     });
 
+    let firstUrl = pdfs[0]?.url || null;
     let html = '<div class="source-access-container">';
 
     // Primary action: Download PDF button
@@ -267,6 +268,8 @@ function buildSourceLinks(paper) {
             // Skip DOI URLs only if there are other non-DOI sources
             if (isDoiUrl && hasNonDoiSources) return;
 
+            firstUrl ||= access.url;
+
             const citationCount = parseInt(access.citation_count) || 0;
 
             let citationClass = '';
@@ -293,6 +296,7 @@ function buildSourceLinks(paper) {
 
             html += `<a href="${escapeHtml(access.url)}"
                        target="_blank"
+                       rel="noopener noreferrer"
                        class="source-chip source-chip-page"
                        title="Publisher page">
                        ${escapeHtml(displayLabel)}${citationText}
@@ -305,7 +309,7 @@ function buildSourceLinks(paper) {
     // Google Scholar fallback removed - rarely used, saves ~300 bytes
 
     html += '</div>';
-    return html;
+    return { html, firstUrl };
 }
 
 /**
@@ -331,7 +335,7 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
     const journal = truncateText(formatJournal(paper.journal), 100);
     const cleanAbstract = stripHtmlTags(paper.abstract);
     const abstract = truncateText(cleanAbstract, 500);
-    const accessLinks = buildSourceLinks(paper);
+    const { html: accessLinks, firstUrl } = buildSourceLinks(paper);
 
     // Use data attribute for title to avoid escaping issues in onclick
     const safeTitle = escapeHtml(paper.title || 'Untitled');
@@ -514,7 +518,9 @@ export function buildPaperCard(paper, index, showBadge = true, options = {}) {
             <div class="paper-header">
                 <div class="paper-title-actions">
                     <h3>
-                        ${escapeHtml(paper.title || 'Untitled')}
+                        ${firstUrl
+                            ? `<a class="paper-title-link" href="${escapeHtml(firstUrl)}" target="_blank" rel="noopener noreferrer">${safeTitle}</a>`
+                            : safeTitle}
                         <span class="title-search-icon"
                               data-title="${safeTitle}"
                               onclick="searchByTitle(this.dataset.title)"
