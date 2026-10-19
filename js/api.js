@@ -15,10 +15,8 @@ import {
     setCurrentQuery,
     setBm25ScoringComplete
 } from './state.js';
-import PaperProcessor from './processing-poc.js';
-import ClientSearchOrchestrator, { defaultSources } from './api-clients/orchestrator.js';
-import { normalizeDoi } from './utils.js';
-import BloomFilter from './bloom-filter.js';
+import { searchPapers } from './search-core.js';
+import { getPaperKey } from './utils.js';
 
 // Only the active session may publish results or populate the query cache.
 let activeSearch = null;
@@ -65,8 +63,6 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
     const session = { controller: new AbortController(), done: false, minRelevance };
     activeSearch = session;
     const isActive = () => activeSearch === session && !session.controller.signal.aborted;
-    const paperProcessor = new PaperProcessor();
-    const clientSearchOrchestrator = new ClientSearchOrchestrator({ signal: session.controller.signal });
 
     // Check cache FIRST - instant O(1) lookup with no side effects
     const cached = searchCache.get(cacheKey);
@@ -74,7 +70,7 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
         // Use cached results
         papersByKey.clear();
         structuredClone(cached.papers).forEach(paper => {
-            const key = paperProcessor.getPaperKey(paper);
+            const key = getPaperKey(paper);
             papersByKey.set(key, paper);
         });
 
@@ -118,15 +114,6 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
     setCurrentQuery(query);
     setBm25ScoringComplete(false); // Reset BM25 scoring flag
 
-    // Reset BM25 corpus to prevent memory leak
-    paperProcessor.bm25.reset();
-
-    // DOI index for O(1) deduplication lookups (10x faster than fuzzy matching)
-    const doiIndex = new Map();
-
-    // Bloom filter for probabilistic O(1) duplicate detection (99.9% accurate, 1% false positives)
-    const doiBloom = new BloomFilter(10000);
-
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = '<p class="loading-message">🔍 Searching across academic databases...</p>';
 
@@ -139,9 +126,9 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
     try {
         // Search with streaming-like callbacks across all sources
         // Filter out semanticscholar: CORS not supported for browser access
-        await clientSearchOrchestrator.searchWithCallbacks(query, {
+        await searchPapers(query, {
             limit,
-            sources: defaultSources.filter(s => s !== 'semanticscholar'),
+            signal: session.controller.signal,
 
             onSourceStart: (data) => {
                 if (!isActive()) return;
@@ -150,113 +137,8 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
 
             onResults: (data) => {
                 if (!isActive()) return;
-                // Deduplicate, merge, and score incrementally with current corpus stats
-                const newPapers = [];
-
-                data.papers.forEach(paper => {
-                    let foundDuplicate = false;
-                    let matchKey = null;
-
-                    // Ultra-fast path: Bloom filter check first (O(1) probabilistic)
-                    if (paper.doi) {
-                        const normalizedDoi = normalizeDoi(paper.doi);
-
-                        // If bloom filter says "definitely not seen before", skip hash lookup
-                        if (!doiBloom.mightContain(normalizedDoi)) {
-                            // Definitely new - add to bloom filter for future checks
-                            doiBloom.add(normalizedDoi);
-                        } else {
-                            // Might be duplicate - check hash index to confirm
-                            if (doiIndex.has(normalizedDoi)) {
-                                matchKey = doiIndex.get(normalizedDoi);
-                                foundDuplicate = true;
-                            }
-                        }
-                    }
-
-                    // Slow path: Only do fuzzy matching if no DOI match
-                    if (!foundDuplicate) {
-                        for (const [key, existing] of papersByKey.entries()) {
-                            if (paperProcessor.areDuplicates(existing, paper)) {
-                                matchKey = key;
-                                foundDuplicate = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (foundDuplicate && matchKey) {
-                        // Merge with existing paper
-                        const existing = papersByKey.get(matchKey);
-
-                        // Defensive: ensure existing paper exists
-                        if (existing) {
-                            const merged = paperProcessor.mergePapers(existing, paper);
-                            const mergedKey = paperProcessor.getPaperKey(merged);
-                            papersByKey.delete(matchKey);
-                            papersByKey.set(mergedKey, merged);
-                            if (merged.doi) {
-                                const doi = normalizeDoi(merged.doi);
-                                doiIndex.set(doi, mergedKey);
-                                doiBloom.add(doi);
-                            }
-                            newPapers.push(merged);
-
-                        } else {
-                            // Key was found but paper was removed - treat as new paper
-                            const key = paperProcessor.getPaperKey(paper);
-                            papersByKey.set(key, paper);
-                            newPapers.push(paper);
-                        }
-                    } else {
-                        // Add new paper
-                        const key = paperProcessor.getPaperKey(paper);
-
-                        // FIXED: Create _source_links for single-source papers too
-                        // This ensures consistent rendering and filtering behavior
-                        if (!paper._source_links) {
-                            const pdfUrl = paper.pdf_url || paper.open_access_pdf;
-                            paper._source_links = [{
-                                source: paper.source,
-                                pdf_url: pdfUrl || null,
-                                url: paper.url || null,
-                                // CRITICAL: has_pdf should ONLY be true if pdf_url is valid AND not null
-                                has_pdf: !!(pdfUrl && paperProcessor.isValidPdfUrl(pdfUrl)),
-                                is_open_access: paper.is_open_access || false,
-                                citation_count: parseInt(paper.citation_count) || 0
-                            }];
-                        }
-
-                        papersByKey.set(key, paper);
-                        newPapers.push(paper);
-
-                        // Index by DOI for fast future lookups (also add to bloom if not already)
-                        if (paper.doi) {
-                            const normalizedDoi = normalizeDoi(paper.doi);
-                            doiIndex.set(normalizedDoi, key);
-                            doiBloom.add(normalizedDoi);
-                        }
-                    }
-                });
-
-                // Incrementally update corpus stats with new papers
-                paperProcessor.bm25.updateCorpusStats(newPapers);
-
-                // Calculate average document length from current corpus
-                const allPapers = Array.from(papersByKey.values());
-                const avgLength = allPapers.reduce((sum, p) => {
-                    const text = paperProcessor.bm25.getPaperText(p);
-                    const tokens = text.toLowerCase().split(/\s+/).filter(t => t.length > 2);
-                    return sum + tokens.length;
-                }, 0) / Math.max(allPapers.length, 1);
-
-                // Score new papers with current corpus stats
-                newPapers.forEach(paper => {
-                    paper.relevance_score = paperProcessor.bm25.score(paper, query, avgLength);
-                });
-
-                // No need to update anything - papersByKey is the source of truth
-                // renderCallback will read directly from papersByKey
+                papersByKey.clear();
+                data.papers.forEach(paper => papersByKey.set(getPaperKey(paper), paper));
             },
 
             onSourceComplete: (data) => {
@@ -271,11 +153,6 @@ export async function searchWithClient(query, limit, pdfOnly = false, minRelevan
             onComplete: async (data) => {
                 if (!isActive()) return;
                 const papers = Array.from(papersByKey.values());
-                paperProcessor.bm25.reset();
-                paperProcessor.bm25.updateCorpusStats(papers);
-                const avgLength = papers.reduce((sum, p) => sum + paperProcessor.bm25.getPaperText(p)
-                    .toLowerCase().split(/\s+/).filter(t => t.length > 2).length, 0) / Math.max(papers.length, 1);
-                papers.forEach(p => { p.relevance_score = paperProcessor.bm25.score(p, query, avgLength); });
                 session.done = true;
                 // Publish rankings computed from the complete corpus.
                 setBm25ScoringComplete(true);

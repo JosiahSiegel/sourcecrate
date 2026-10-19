@@ -235,7 +235,8 @@ export class ClientSearchOrchestrator {
                         source: sourceName,
                         count: papers.length,
                         completed: sourcesCompleted,
-                        total: sources.length
+                        total: sources.length,
+                        error: client.lastError || null
                     });
                 }
             } catch (error) {

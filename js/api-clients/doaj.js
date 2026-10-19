@@ -35,6 +35,7 @@ export class DOAJClient extends BaseAPIClient {
             const data = await response.json();
             return this.parseDOAJResponse(data);
         } catch (error) {
+            this.lastError = error.message;
             console.error(`[DOAJ] Search error:`, error);
             return [];
         }

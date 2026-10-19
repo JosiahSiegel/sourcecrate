@@ -60,6 +60,7 @@ export class PubMedClient extends BaseAPIClient {
             const xmlText = await fetchResponse.text();
             return this.parsePubMedXML(xmlText);
         } catch (error) {
+            this.lastError = error.message;
             console.error(`[PubMed] Search error:`, error);
             return [];
         }

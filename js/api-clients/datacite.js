@@ -37,6 +37,7 @@ export class DataCiteClient extends BaseAPIClient {
             const data = await response.json();
             return this.parseDataCiteResponse(data);
         } catch (error) {
+            this.lastError = error.message;
             console.error(`[DataCite] Search error:`, error);
             return [];
         }

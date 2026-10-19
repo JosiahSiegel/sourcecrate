@@ -38,6 +38,7 @@ export class CrossRefClient extends BaseAPIClient {
             const data = await response.json();
             return this.parseCrossRefResponse(data);
         } catch (error) {
+            this.lastError = error.message;
             console.error(`[CrossRef] Search error:`, error);
             return [];
         }

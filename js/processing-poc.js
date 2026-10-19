@@ -6,7 +6,7 @@
  * Simple fuzzy string matching for paper deduplication
  * Replaces Python's rapidfuzz library
  */
-import { getPaperKey, normalizeDoi } from './utils.js';
+import { getPaperKey, normalizeDoi, sortByRelevance } from './utils.js';
 
 export class FuzzyMatcher {
     /**
@@ -545,6 +545,7 @@ export class PaperProcessor {
         if (!query || papers.length === 0) return papers;
 
         // Update corpus statistics for IDF calculation
+        this.bm25.reset();
         this.bm25.updateCorpusStats(papers);
 
         // Calculate average paper length for BM25
@@ -565,18 +566,7 @@ export class PaperProcessor {
      * Sort papers by relevance, citation count, and year
      */
     sortPapers(papers) {
-        return papers.sort((a, b) => {
-            // Primary: relevance score
-            const relDiff = (b.relevance_score || 0) - (a.relevance_score || 0);
-            if (Math.abs(relDiff) > 0.1) return relDiff;
-
-            // Secondary: citation count
-            const citeDiff = (b.citation_count || 0) - (a.citation_count || 0);
-            if (citeDiff !== 0) return citeDiff;
-
-            // Tertiary: year (newer first)
-            return (b.year || 0) - (a.year || 0);
-        });
+        return sortByRelevance(papers);
     }
 
     /**

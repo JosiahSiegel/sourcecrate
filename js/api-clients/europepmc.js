@@ -43,6 +43,7 @@ export class EuropePMCClient extends BaseAPIClient {
             const data = await response.json();
             return this.parseEuropePMCResponse(data);
         } catch (error) {
+            this.lastError = error.message;
             // Gracefully handle errors - don't block other sources
             console.warn(`[Europe PMC] Skipping source due to error:`, error.message);
             return [];

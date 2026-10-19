@@ -29,9 +29,12 @@ export class BaseAPIClient {
                 mode: 'cors',
                 priority // Priority Hints API for faster critical requests
             });
+            this.lastError = response.ok ? null : `HTTP ${response.status}`;
             return response;
         } catch (error) {
+            this.lastError = error.message;
             if (timeoutSignal.aborted) {
+                this.lastError = `${this.name} request timeout after ${this.timeout}ms`;
                 throw new Error(`${this.name} request timeout after ${this.timeout}ms`);
             }
             throw error;

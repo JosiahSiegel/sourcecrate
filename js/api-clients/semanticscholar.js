@@ -57,6 +57,7 @@ export class SemanticScholarClient extends BaseAPIClient {
             const data = await response.json();
             return this.parseSemanticScholarResponse(data);
         } catch (error) {
+            this.lastError = error.message;
             console.error(`[Semantic Scholar] Search error:`, error);
             return [];
         }

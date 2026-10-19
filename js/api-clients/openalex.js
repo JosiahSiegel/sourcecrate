@@ -36,6 +36,7 @@ export class OpenAlexClient extends BaseAPIClient {
             const data = await response.json();
             return this.parseOpenAlexResponse(data);
         } catch (error) {
+            this.lastError = error.message;
             console.error(`[OpenAlex] Search error:`, error);
             return [];
         }

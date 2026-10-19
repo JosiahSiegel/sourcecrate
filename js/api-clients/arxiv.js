@@ -38,6 +38,7 @@ export class ArxivClient extends BaseAPIClient {
             const xmlText = await response.text();
             return this.parseArxivXML(xmlText);
         } catch (error) {
+            this.lastError = error.message;
             console.error(`[arXiv] Search error:`, error);
             return [];
         }

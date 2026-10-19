@@ -501,16 +501,17 @@ export function sortByRelevance(results) {
         const scoreB = b.relevance_score !== undefined ? b.relevance_score : 0;
 
         // Primary sort: relevance score descending
-        // Use tolerance of 0.1 to handle floating point precision issues
         const scoreDiff = scoreB - scoreA;
-        if (Math.abs(scoreDiff) > 0.1) {
+        if (scoreDiff !== 0) {
             return scoreDiff;
         }
 
-        // Secondary sort: title ascending (for papers with similar scores)
+        // Citations break exact ties, never override a closer query match.
+        const citationDiff = (parseInt(b.citation_count) || 0) - (parseInt(a.citation_count) || 0);
+        if (citationDiff) return citationDiff;
         const titleA = (a.title || '').toLowerCase();
         const titleB = (b.title || '').toLowerCase();
-        return titleA.localeCompare(titleB);
+        return titleA < titleB ? -1 : titleA > titleB ? 1 : 0;
     });
 }
 

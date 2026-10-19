@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Academic paper search that runs entirely in your browser",
   "type": "module",
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -32,5 +34,16 @@
     "jsdom": "^27.0.0",
     "msw": "^2.11.5",
     "vitest": "^5.0.5"
-  }
+  },
+  "exports": {
+    "./search": "./js/search-core.js",
+    "./access-links": "./js/access-links.js"
+  },
+  "files": [
+    "js/search-core.js",
+    "js/access-links.js",
+    "js/api-clients",
+    "js/processing-poc.js",
+    "js/utils.js"
+  ]
 }
