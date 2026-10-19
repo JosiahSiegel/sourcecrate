@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { searchPapers, rankPapers, sources } from '../../js/search-core.js';
 import { getAccessLinks } from '../../js/access-links.js';
+import { getPaperKey } from '../../js/utils.js';
 import ClientSearchOrchestrator from '../../js/api-clients/orchestrator.js';
 
 afterEach(() => vi.restoreAllMocks());
@@ -8,6 +9,15 @@ const query = 'game programming patterns Robert Nystrom';
 const exact = { title: 'Game Programming Patterns', authors: ['Robert Nystrom'], doi: '10.1234/book', source: 'CrossRef', url: 'https://example.org/book' };
 
 describe('shared website and agent search', () => {
+    it('retains same-title works by different authors, including distinct UI identities', () => {
+        const papers = [{ title: exact.title, authors: ['Other Writer'] },
+            { title: exact.title, authors: exact.authors }];
+        const ranked = rankPapers(papers, query);
+        expect(ranked).toHaveLength(2);
+        expect(rankPapers([...papers].reverse(), query)).toEqual(ranked);
+        expect(ranked[0].authors).toEqual(exact.authors);
+        expect(new Set(ranked.map(getPaperKey)).size).toBe(2);
+    });
     it('keeps the same ranking and merged links regardless of source arrival order', () => {
         const papers = [exact,
             { ...exact, source: 'OpenAlex', abstract: 'Book description', pdf_url: 'https://example.org/book.pdf' },
@@ -42,6 +52,6 @@ describe('shared website and agent search', () => {
         controller.abort(new Error('Cancelled by caller'));
         vi.spyOn(ClientSearchOrchestrator.prototype, 'searchWithCallbacks').mockResolvedValue({});
         await expect(searchPapers(query, { signal: controller.signal })).rejects.toThrow('Cancelled by caller');
-        expect(sources).toHaveLength(8);
+        expect(sources).toHaveLength(9);
     });
 });

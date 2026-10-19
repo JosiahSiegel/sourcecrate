@@ -387,6 +387,14 @@ export class PaperProcessor {
             return doi1 === doi2;
         }
 
+        // Similar titles by unrelated authors are distinct works (especially books).
+        const surnames = paper => (Array.isArray(paper.authors) ? paper.authors : [])
+            .map(author => typeof author === 'string' ? author : author?.name || '')
+            .map(name => name.split(',')[0].normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase()
+                .match(/[\p{L}\p{N}]+/gu)?.at(-1)).filter(Boolean);
+        const authors1 = surnames(paper1), authors2 = surnames(paper2);
+        if (authors1.length && authors2.length && !authors1.some(name => authors2.includes(name))) return false;
+
         // Fuzzy title matching
         const title1 = FuzzyMatcher.normalizeTitle(paper1.title);
         const title2 = FuzzyMatcher.normalizeTitle(paper2.title);
@@ -442,7 +450,7 @@ export class PaperProcessor {
             ...existing,
             // Prefer non-null values from new paper
             title: existing.title || newPaper.title,
-            authors: existing.authors || newPaper.authors,
+            authors: existing.authors?.length ? existing.authors : newPaper.authors,
             abstract: existing.abstract || newPaper.abstract,
             doi: existing.doi || newPaper.doi,
             year: existing.year || newPaper.year,
@@ -523,9 +531,12 @@ export class PaperProcessor {
 
             if (!foundDuplicate) {
                 // Add as new unique paper
-                const key = this.getPaperKey(paper);
+                let key = this.getPaperKey(paper);
+                const collision = uniquePapers.has(key);
+                if (collision) key += `::${JSON.stringify([paper.url || '', paper.authors || [], paper.source || ''])}`;
                 uniquePapers.set(key, {
                     ...paper,
+                    ...(collision ? { _identity_key: key } : {}),
                     _sources: [paper.source],
                     _merged_count: 1
                 });

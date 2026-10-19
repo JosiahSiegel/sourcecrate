@@ -52,6 +52,7 @@ exports at a pinned revision. The browser and MCP share source clients, title/au
 ranking, deduplication, relevance scores and link selection. Provider availability
 can differ because of browser CORS and rate limits; the same input candidates produce
 the same ranked results. Search and ranking changes belong in this repository.
+Open Library complements academic sources with books, including title-and-author searches.
 
 Coverage thresholds were rebaselined when upgrading from Vitest 3 to 5, whose
 AST-based counters report untested functions/branches differently. All existing

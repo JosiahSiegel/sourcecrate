@@ -8,6 +8,7 @@ import { http, HttpResponse } from 'msw';
 import mockApiResponses from '../fixtures/mock-api-responses.json' with { type: 'json' };
 
 export const handlers = [
+  http.get('https://openlibrary.org/search.json*', () => HttpResponse.json({ docs: [] })),
   // ========================================================================
   // arXiv API - Returns XML (Atom feed format)
   // ========================================================================

@@ -128,6 +128,7 @@ export function normalizeTitle(title) {
 export function getPaperKey(paper) {
     const doi = normalizeDoi(paper.doi);
     if (doi) return `doi:${doi}`;
+    if (paper._identity_key) return paper._identity_key;
 
     const title = normalizeTitle(paper.title);
     if (title) return `title:${title}`;

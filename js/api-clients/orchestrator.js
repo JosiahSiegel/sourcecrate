@@ -18,7 +18,8 @@ export const defaultSources = [
     'europepmc',
     'semanticscholar',
     'datacite',
-    'zenodo'
+    'zenodo',
+    'openlibrary'
 ];
 
 /**
@@ -81,6 +82,9 @@ export class ClientSearchOrchestrator {
                         break;
                     case 'zenodo':
                         ClientClass = (await import('./zenodo.js')).default;
+                        break;
+                    case 'openlibrary':
+                        ClientClass = (await import('./openlibrary.js')).default;
                         break;
                     default:
                         throw new Error(`Unknown source: ${sourceName}`);

@@ -17,6 +17,8 @@ const STATIC_ASSETS = [
     '/js/utils.js',
     '/js/rendering.js',
     '/js/processing-poc.js',
+    '/js/search-core.js',
+    '/js/access-links.js',
     '/js/api-clients/orchestrator.js',
     '/favicon.svg'
 ];
@@ -67,9 +69,9 @@ self.addEventListener('fetch', (event) => {
                          url.hostname === 'eutils.ncbi.nlm.nih.gov' ||
                          url.hostname === 'doaj.org' ||
                          url.hostname === 'europepmc.org' ||
-                         url.hostname === 'api.unpaywall.org' ||
                          url.hostname === 'api.datacite.org' ||
-                         url.hostname === 'zenodo.org';
+                         url.hostname === 'zenodo.org' ||
+                         url.hostname === 'openlibrary.org';
 
     if (isAPIRequest) {
         event.respondWith(

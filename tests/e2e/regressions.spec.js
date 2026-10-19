@@ -1,5 +1,30 @@
 import { test, expect } from '@playwright/test';
 
+test('book title-author matches survive deduplication against similarly named articles', async ({ page }) => {
+    await page.route('**/*', async route => {
+        const url = route.request().url();
+        if (!['fetch', 'xhr'].includes(route.request().resourceType()) ||
+            new URL(url).origin === new URL(page.url()).origin) return route.continue();
+        let body = {};
+        if (url.includes('api.crossref.org')) body = { message: { items: [{
+            title: ['Game patterns: patterns for game programming'], DOI: '10.1145/2581507.2581518',
+            author: [{ given: 'David', family: 'Ferreira' }]
+        }] } };
+        if (url.includes('openlibrary.org')) body = { docs: [{ key: '/works/OL19650342W',
+            title: 'Game Programming Patterns', author_name: ['Robert Nystrom'], first_publish_year: 2011 }] };
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+    });
+    await page.goto('/');
+    await page.fill('#searchQuery', 'game programming patterns Robert Nystrom');
+    await page.keyboard.press('Escape');
+    await page.click('#searchForm button[type="submit"]');
+    await expect(page.locator('#results-summary')).toContainText('Search complete');
+    await expect(page.locator('.paper-card')).toHaveCount(2);
+    const first = page.locator('.paper-card').first();
+    await expect(first.locator('h3 a')).toHaveText('Game Programming Patterns');
+    await expect(first.locator('h3 a')).toHaveAttribute('href', 'https://openlibrary.org/works/OL19650342W');
+});
+
 test('title-author matches rank first and result headers open their first access link', async ({ page, context }) => {
     await page.route('**/*', async route => {
         if (!['fetch', 'xhr'].includes(route.request().resourceType()) ||

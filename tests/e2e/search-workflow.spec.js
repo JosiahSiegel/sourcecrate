@@ -29,6 +29,9 @@ async function dismissDropdown(page) {
  * CRITICAL: This prevents spamming real academic APIs during tests
  */
 async function setupNetworkInterception(page) {
+    await page.route('**/openlibrary.org/search.json*', route => route.fulfill({
+        contentType: 'application/json', body: JSON.stringify({ docs: [] })
+    }));
     // Intercept arXiv API
     await page.route('**/export.arxiv.org/**', async (route) => {
         await route.fulfill({

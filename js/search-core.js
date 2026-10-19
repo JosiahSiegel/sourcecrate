@@ -9,7 +9,7 @@ export function rankPapers(papers, query) {
     const processor = new PaperProcessor();
     // Source completion order must not decide which duplicate's metadata wins.
     const ordered = [...papers].sort((a, b) => {
-        const key = p => `${p.source || ''}\n${p.doi || ''}\n${p.title || ''}`;
+        const key = p => `${p.source || ''}\n${p.doi || ''}\n${p.title || ''}\n${JSON.stringify(p.authors || [])}`;
         return key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0;
     });
     return sortByRelevance(processor.processPapers(ordered, query));
