@@ -84,15 +84,6 @@ export const handlers = [
   }),
 
   // ========================================================================
-  // Unpaywall API - Returns JSON
-  // ========================================================================
-  http.get('https://api.unpaywall.org/*', () => {
-    return HttpResponse.json(mockApiResponses.unpaywall, {
-      status: 200
-    });
-  }),
-
-  // ========================================================================
   // DataCite API - Returns JSON
   // ========================================================================
   http.get('https://api.datacite.org/dois*', () => {

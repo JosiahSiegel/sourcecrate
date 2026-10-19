@@ -17,7 +17,6 @@ export const defaultSources = [
     'doaj',
     'europepmc',
     'semanticscholar',
-    'unpaywall',
     'datacite',
     'zenodo'
 ];
@@ -76,9 +75,6 @@ export class ClientSearchOrchestrator {
                         break;
                     case 'semanticscholar':
                         ClientClass = (await import('./semanticscholar.js')).default;
-                        break;
-                    case 'unpaywall':
-                        ClientClass = (await import('./unpaywall.js')).default;
                         break;
                     case 'datacite':
                         ClientClass = (await import('./datacite.js')).default;

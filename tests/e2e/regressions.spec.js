@@ -1,5 +1,40 @@
 import { test, expect } from '@playwright/test';
 
+test('low-scoring results survive scrolling and late search completion', async ({ page }) => {
+    let finishLastSource;
+    const lastSource = new Promise(resolve => { finishLastSource = resolve; });
+    await page.route('**/*', async route => {
+        if (!['fetch', 'xhr'].includes(route.request().resourceType()) ||
+            new URL(route.request().url()).origin === new URL(page.url()).origin) {
+            return route.continue();
+        }
+        const url = route.request().url();
+        if (url.includes('zenodo.org')) await lastSource;
+        const body = url.includes('api.crossref.org') ? { message: { items: [
+            { title: ['A short note'], DOI: '10.1234/retained-one' },
+            { title: ['An unrelated study'], DOI: '10.1234/retained-two' }
+        ] } } : {};
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+    });
+    await page.goto('/');
+    await page.fill('#searchQuery', 'game programming patterns Robert Nystrom');
+    await page.keyboard.press('Escape');
+    await page.click('#searchForm button[type="submit"]');
+    try {
+        await expect(page.locator('.paper-card')).toHaveCount(2);
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await page.evaluate(() => window.scrollTo(0, 0));
+    } finally {
+        finishLastSource();
+    }
+    await expect(page.locator('#results-summary')).toContainText('Search complete');
+    await expect(page.locator('.paper-card')).toHaveCount(2);
+    await expect(page.locator('#results-summary')).toContainText('2 papers');
+    // Repeating the query exercises the completed-result cache as well.
+    await page.click('#searchForm button[type="submit"]');
+    await expect(page.locator('.paper-card')).toHaveCount(2);
+});
+
 test('paper metadata stays inert and filters reconcile the rendered results', async ({ page }, testInfo) => {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));

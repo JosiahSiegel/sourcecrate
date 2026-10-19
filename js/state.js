@@ -2,43 +2,6 @@
 // STATE.JS - Global state management and localStorage utilities
 // ============================================================================
 
-/**
- * Smart API URL detection with fallback chain:
- * 1. Explicit window.SOURCECRATE_API_URL (highest priority)
- * 2. Auto-detect based on current page port (dev container friendly)
- * 3. Default to localhost:9000
- */
-function getApiUrl() {
-    // 1. Check explicit config (highest priority)
-    if (window.SOURCECRATE_API_URL) {
-        return window.SOURCECRATE_API_URL;
-    }
-
-    // 2. Auto-detect based on current page URL (dev container friendly)
-    const currentPort = window.location.port;
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-
-    // Production deployment: no port or standard HTTP(S) ports → use same origin
-    if (!currentPort || currentPort === '80' || currentPort === '443') {
-        return `${protocol}//${hostname}`;
-    }
-
-    if (currentPort === '3000') {
-        // UI on 3000, API on 9000 (standard dev setup)
-        return `${protocol}//${hostname}:9000`;
-    } else if (currentPort === '3001') {
-        // UI forwarded to 3001, API on 9000 (devcontainer)
-        return `${protocol}//${hostname}:9000`;
-    }
-
-    // 3. Default fallback
-    return 'http://localhost:9000';
-}
-
-export const API_BASE_URL = getApiUrl();
-// console.log(`[SourceCrate] Using API URL: ${API_BASE_URL}`);
-
 // ============================================================================
 // Download Reliability Tracking (Client-Side localStorage)
 // ============================================================================
@@ -155,7 +118,9 @@ export let papersByKey = new Map(); // Deduplication map: key → merged paper (
 export let sourcesCompleted = 0;
 export let totalSources = 0;
 export let pdfOnlyFilter = false;
-export let relevanceThreshold = 35; // Default 35%
+// Ranking orders results; only an explicitly requested filter should hide them.
+export const DEFAULT_RELEVANCE_THRESHOLD = 0;
+export let relevanceThreshold = DEFAULT_RELEVANCE_THRESHOLD;
 export let currentQuery = ''; // Store current search query for title matching
 export let renderedPaperKeys = new Set(); // Track which papers are already rendered
 export let bm25ScoringComplete = false; // Track whether BM25 scoring has finished

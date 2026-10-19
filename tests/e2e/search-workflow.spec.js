@@ -83,15 +83,6 @@ async function setupNetworkInterception(page) {
         });
     });
 
-    // Intercept Unpaywall API
-    await page.route('**/api.unpaywall.org/**', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify(mockApiResponses.unpaywall)
-        });
-    });
-
     // Intercept DataCite API
     await page.route('**/api.datacite.org/**', async (route) => {
         await route.fulfill({

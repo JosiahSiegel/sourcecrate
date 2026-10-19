@@ -3,7 +3,7 @@
 // ============================================================================
 
 import {
-    API_BASE_URL,
+    DEFAULT_RELEVANCE_THRESHOLD,
     DownloadReliability,
     papersByKey,
     pdfOnlyFilter,
@@ -273,7 +273,7 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
     const query = document.getElementById('searchQuery').value;
     const limit = 25; // Default: 25 results per source
     const pdfOnly = document.getElementById('pdfOnly').checked;
-    const minRelevance = 35;
+    const minRelevance = DEFAULT_RELEVANCE_THRESHOLD;
 
     // Hide search history dropdown
     hideSearchHistory();

@@ -9,16 +9,32 @@
       "items": [
         {
           "DOI": "10.1000/test.001",
-          "title": ["Deep Learning for Computer Vision: A Comprehensive Survey"],
+          "title": [
+            "Deep Learning for Computer Vision: A Comprehensive Survey"
+          ],
           "author": [
-            {"given": "Emma", "family": "Wilson"},
-            {"given": "Frank", "family": "Martinez"}
+            {
+              "given": "Emma",
+              "family": "Wilson"
+            },
+            {
+              "given": "Frank",
+              "family": "Martinez"
+            }
           ],
           "published": {
-            "date-parts": [[2023, 6, 15]]
+            "date-parts": [
+              [
+                2023,
+                6,
+                15
+              ]
+            ]
           },
           "abstract": "This survey provides a comprehensive overview of deep learning techniques applied to computer vision tasks.",
-          "container-title": ["Journal of Computer Vision"],
+          "container-title": [
+            "Journal of Computer Vision"
+          ],
           "is-referenced-by-count": 42,
           "URL": "https://doi.org/10.1000/test.001",
           "link": [
@@ -30,15 +46,28 @@
         },
         {
           "DOI": "10.1000/test.002",
-          "title": ["Reinforcement Learning in Robotics"],
+          "title": [
+            "Reinforcement Learning in Robotics"
+          ],
           "author": [
-            {"given": "Grace", "family": "Lee"}
+            {
+              "given": "Grace",
+              "family": "Lee"
+            }
           ],
           "published": {
-            "date-parts": [[2023, 8, 22]]
+            "date-parts": [
+              [
+                2023,
+                8,
+                22
+              ]
+            ]
           },
           "abstract": "Exploring reinforcement learning algorithms for robotic control systems.",
-          "container-title": ["Robotics and Automation Journal"],
+          "container-title": [
+            "Robotics and Automation Journal"
+          ],
           "is-referenced-by-count": 18,
           "URL": "https://doi.org/10.1000/test.002"
         }
@@ -51,7 +80,10 @@
         "count": "2",
         "retmax": "2",
         "retstart": "0",
-        "idlist": ["37000001", "37000002"]
+        "idlist": [
+          "37000001",
+          "37000002"
+        ]
       }
     },
     "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE PubmedArticleSet PUBLIC \"-//NLM//DTD PubMedArticle, 1st January 2023//EN\" \"https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_230101.dtd\"><PubmedArticleSet><PubmedArticle><MedlineCitation><PMID>37000001</PMID><Article><ArticleTitle>Advances in Immunology: T Cell Function</ArticleTitle><Abstract><AbstractText>This study examines T cell responses in various immune conditions.</AbstractText></Abstract><AuthorList><Author><ForeName>Sarah</ForeName><LastName>Johnson</LastName></Author><Author><ForeName>Michael</ForeName><LastName>Chen</LastName></Author></AuthorList><Journal><Title>Journal of Immunology</Title></Journal></Article><PubDate><Year>2023</Year></PubDate></MedlineCitation><ArticleIdList><ArticleId IdType=\"pubmed\">37000001</ArticleId><ArticleId IdType=\"doi\">10.4000/immunology.001</ArticleId><ArticleId IdType=\"pmc\">PMC10000001</ArticleId></ArticleIdList></PubmedArticle><PubmedArticle><MedlineCitation><PMID>37000002</PMID><Article><ArticleTitle>Cancer Biomarkers and Diagnostics</ArticleTitle><Abstract><AbstractText>We identify novel biomarkers for early cancer detection.</AbstractText></Abstract><AuthorList><Author><ForeName>David</ForeName><LastName>Williams</LastName></Author></AuthorList><Journal><Title>Cancer Research Journal</Title></Journal></Article><PubDate><Year>2023</Year></PubDate></MedlineCitation><ArticleIdList><ArticleId IdType=\"pubmed\">37000002</ArticleId><ArticleId IdType=\"doi\">10.4000/cancer.002</ArticleId></ArticleIdList></PubmedArticle></PubmedArticleSet>"
@@ -62,32 +94,69 @@
         "id": "https://openalex.org/W3000000001",
         "title": "CRISPR Gene Editing: Recent Advances and Clinical Applications",
         "authorships": [
-          {"author": {"display_name": "Henry Chen"}},
-          {"author": {"display_name": "Isabel Rodriguez"}}
+          {
+            "author": {
+              "display_name": "Henry Chen"
+            }
+          },
+          {
+            "author": {
+              "display_name": "Isabel Rodriguez"
+            }
+          }
         ],
         "publication_year": 2023,
         "doi": "https://doi.org/10.1001/biotech.2023.001",
         "abstract_inverted_index": {
-          "This": [0],
-          "paper": [1],
-          "reviews": [2],
-          "recent": [3],
-          "advances": [4],
-          "in": [5, 11],
-          "CRISPR": [6],
-          "gene": [7],
-          "editing": [8],
-          "technology": [9],
-          "and": [10],
-          "clinical": [12],
-          "applications": [13]
+          "This": [
+            0
+          ],
+          "paper": [
+            1
+          ],
+          "reviews": [
+            2
+          ],
+          "recent": [
+            3
+          ],
+          "advances": [
+            4
+          ],
+          "in": [
+            5,
+            11
+          ],
+          "CRISPR": [
+            6
+          ],
+          "gene": [
+            7
+          ],
+          "editing": [
+            8
+          ],
+          "technology": [
+            9
+          ],
+          "and": [
+            10
+          ],
+          "clinical": [
+            12
+          ],
+          "applications": [
+            13
+          ]
         },
         "open_access": {
           "is_oa": true,
           "oa_url": "https://example.com/crispr-paper.pdf"
         },
         "primary_location": {
-          "source": {"display_name": "Nature Biotechnology"},
+          "source": {
+            "display_name": "Nature Biotechnology"
+          },
           "pdf_url": "https://example.com/crispr-paper.pdf"
         },
         "cited_by_count": 156
@@ -96,7 +165,11 @@
         "id": "https://openalex.org/W3000000002",
         "title": "Immunotherapy Approaches for Cancer Treatment",
         "authorships": [
-          {"author": {"display_name": "Julia Thompson"}}
+          {
+            "author": {
+              "display_name": "Julia Thompson"
+            }
+          }
         ],
         "publication_year": 2023,
         "doi": "https://doi.org/10.1001/oncology.2023.002",
@@ -104,7 +177,9 @@
           "is_oa": false
         },
         "primary_location": {
-          "source": {"display_name": "Journal of Clinical Oncology"}
+          "source": {
+            "display_name": "Journal of Clinical Oncology"
+          }
         },
         "cited_by_count": 89
       }
@@ -117,8 +192,12 @@
         "bibjson": {
           "title": "Open Access Publishing in Scientific Research",
           "author": [
-            {"name": "Kevin Park"},
-            {"name": "Laura Anderson"}
+            {
+              "name": "Kevin Park"
+            },
+            {
+              "name": "Laura Anderson"
+            }
           ],
           "year": "2023",
           "abstract": "This article examines the impact of open access publishing on scientific research dissemination.",
@@ -168,15 +247,6 @@
       ]
     }
   },
-  "unpaywall": {
-    "doi": "10.1000/test.001",
-    "title": "Sample Paper for Testing",
-    "oa_status": "gold",
-    "best_oa_location": {
-      "url_for_pdf": "https://example.com/sample.pdf",
-      "url": "https://example.com/sample"
-    }
-  },
   "datacite": {
     "data": [
       {
@@ -185,11 +255,17 @@
         "attributes": {
           "doi": "10.5000/datacite.001",
           "titles": [
-            {"title": "Climate Change Data Repository 2023"}
+            {
+              "title": "Climate Change Data Repository 2023"
+            }
           ],
           "creators": [
-            {"name": "Oliver Green"},
-            {"name": "Patricia Clark"}
+            {
+              "name": "Oliver Green"
+            },
+            {
+              "name": "Patricia Clark"
+            }
           ],
           "publicationYear": 2023,
           "descriptions": [
@@ -215,8 +291,12 @@
           "metadata": {
             "title": "Open Research Dataset: Social Media Analysis",
             "creators": [
-              {"name": "Quinn Martinez"},
-              {"name": "Rachel Kim"}
+              {
+                "name": "Quinn Martinez"
+              },
+              {
+                "name": "Rachel Kim"
+              }
             ],
             "publication_date": "2023-09-10",
             "description": "Dataset containing social media interactions for research purposes.",

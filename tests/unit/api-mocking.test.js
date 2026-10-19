@@ -77,15 +77,6 @@ describe('MSW API Mocking Verification', () => {
         expect(json).toHaveProperty('resultList');
     });
 
-    it('should intercept Unpaywall API calls', async () => {
-        const response = await fetch('https://api.unpaywall.org/v2/10.1000/test?email=test@example.com');
-
-        expect(response.ok).toBe(true);
-        const json = await response.json();
-
-        expect(json).toHaveProperty('doi');
-    });
-
     it('should intercept DataCite API calls', async () => {
         const response = await fetch('https://api.datacite.org/dois?query=test');
 

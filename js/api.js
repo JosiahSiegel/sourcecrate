@@ -3,6 +3,7 @@
 // ============================================================================
 
 import {
+    DEFAULT_RELEVANCE_THRESHOLD,
     papersByKey,
     sourcesCompleted,
     totalSources,
@@ -55,7 +56,7 @@ function getSearchCacheKey(query, limit, pdfOnly) {
  * @param {number} minRelevance - Minimum relevance threshold
  * @param {Function} renderCallback - Callback to render results
  */
-export async function searchWithClient(query, limit, pdfOnly = false, minRelevance = 35, renderCallback = () => {}) {
+export async function searchWithClient(query, limit, pdfOnly = false, minRelevance = DEFAULT_RELEVANCE_THRESHOLD, renderCallback = () => {}) {
     if (typeof renderCallback !== "function") renderCallback = () => {};
     const cacheKey = getSearchCacheKey(query, limit, pdfOnly);
     const now = Date.now();
@@ -341,7 +342,7 @@ export function searchByTitle(title, renderCallback) {
     // Trigger search with current settings
     const limit = 25;
     const pdfOnly = document.getElementById('pdfOnly').checked;
-    const minRelevance = 35;
+    const minRelevance = DEFAULT_RELEVANCE_THRESHOLD;
 
     // Scroll to top to see results
     window.scrollTo({ top: 0, behavior: 'smooth' });

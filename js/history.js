@@ -2,6 +2,8 @@
 // HISTORY.JS - Search history tracking (client-side localStorage)
 // ============================================================================
 
+import { DEFAULT_RELEVANCE_THRESHOLD } from './state.js';
+
 const STORAGE_KEY = 'sourcecrate_search_history';
 const MAX_HISTORY = 50; // Keep last 50 searches
 
@@ -55,7 +57,7 @@ export function addToHistory(query, resultCount = 0, filters = {}) {
         resultCount,
         filters: {
             pdfOnly: filters.pdfOnly || false,
-            relevanceThreshold: filters.relevanceThreshold || 35
+            relevanceThreshold: filters.relevanceThreshold ?? DEFAULT_RELEVANCE_THRESHOLD
         }
     };
 
